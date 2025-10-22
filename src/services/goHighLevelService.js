@@ -123,6 +123,174 @@ const goHighLevelService = {
       return { success: false };
     }
   },
+
+  /**
+   * Get all leads from GoHighLevel
+   * @param {Object} params - Request parameters
+   * @returns {Promise<Object>} Response data
+   */
+  getLeads: async ({ accessToken, locationId, page = 1, limit = 20, sortBy = 'createdAt', sortOrder = 'desc' }) => {
+    try {
+      // For demo mode, return mock data
+      if (accessToken && accessToken.includes('demo-access-token')) {
+        return {
+          success: true,
+          data: [
+            {
+              id: 'demo-lead-1',
+              firstName: 'John',
+              lastName: 'Doe',
+              email: 'john.doe@example.com',
+              phone: '+1234567890',
+              source: 'Demo',
+              status: 'new',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            },
+            {
+              id: 'demo-lead-2',
+              firstName: 'Jane',
+              lastName: 'Smith',
+              email: 'jane.smith@example.com',
+              phone: '+0987654321',
+              source: 'Demo',
+              status: 'qualified',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            }
+          ],
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: 2,
+            totalPages: 1
+          }
+        };
+      }
+
+      const client = createApiClient(accessToken);
+      const response = await client.get('/contacts', {
+        params: {
+          locationId,
+          limit,
+          skip: (page - 1) * limit,
+          sortBy,
+          sortOrder
+        }
+      });
+      
+      return {
+        success: true,
+        data: response.data.contacts || [],
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: response.data.meta?.total || 0,
+          totalPages: Math.ceil((response.data.meta?.total || 0) / limit)
+        }
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  /**
+   * Get lead by ID from GoHighLevel
+   * @param {Object} params - Request parameters
+   * @returns {Promise<Object>} Response data
+   */
+  getLeadById: async ({ accessToken, locationId, leadId }) => {
+    try {
+      // For demo mode, return mock data
+      if (accessToken && accessToken.includes('demo-access-token')) {
+        return {
+          success: true,
+          data: {
+            id: leadId,
+            firstName: 'Demo',
+            lastName: 'Lead',
+            email: 'demo.lead@example.com',
+            phone: '+1234567890',
+            source: 'Demo',
+            status: 'new',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }
+        };
+      }
+
+      const client = createApiClient(accessToken);
+      const response = await client.get(`/contacts/${leadId}`, {
+        params: { locationId }
+      });
+      
+      return {
+        success: true,
+        data: response.data.contact
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  /**
+   * Search leads in GoHighLevel
+   * @param {Object} params - Request parameters
+   * @returns {Promise<Object>} Response data
+   */
+  searchLeads: async ({ accessToken, locationId, query, filters, page = 1, limit = 20 }) => {
+    try {
+      // For demo mode, return mock data
+      if (accessToken && accessToken.includes('demo-access-token')) {
+        return {
+          success: true,
+          data: [
+            {
+              id: 'demo-search-1',
+              firstName: 'Search',
+              lastName: 'Result',
+              email: 'search.result@example.com',
+              phone: '+1111111111',
+              source: 'Demo Search',
+              status: 'new',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            }
+          ],
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: 1,
+            totalPages: 1
+          }
+        };
+      }
+
+      const client = createApiClient(accessToken);
+      const response = await client.get('/contacts/search', {
+        params: {
+          locationId,
+          query,
+          ...filters,
+          limit,
+          skip: (page - 1) * limit
+        }
+      });
+      
+      return {
+        success: true,
+        data: response.data.contacts || [],
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: response.data.meta?.total || 0,
+          totalPages: Math.ceil((response.data.meta?.total || 0) / limit)
+        }
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
   
   /**
    * Sync lead to GoHighLevel
@@ -800,6 +968,368 @@ const goHighLevelService = {
         success: true,
         message: `${results.filter(r => r.success).length} contacts synced from GoHighLevel to Nextiva`,
         results
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  /**
+   * Get all lists
+   * @param {Object} params - Request parameters
+   * @returns {Promise<Object>} Response data
+   */
+  getLists: async ({ accessToken, locationId, page = 1, limit = 20, sortBy = 'createdAt', sortOrder = 'desc' }) => {
+    try {
+      // Check if we're in demo mode
+      if (!accessToken || accessToken.startsWith('demo-')) {
+        return {
+          success: true,
+          data: [
+            {
+              id: 'demo-list-1',
+              name: 'Hot Leads',
+              description: 'High priority leads',
+              tags: ['hot', 'priority'],
+              leadCount: 25,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            },
+            {
+              id: 'demo-list-2',
+              name: 'Cold Leads',
+              description: 'Leads to nurture',
+              tags: ['cold', 'nurture'],
+              leadCount: 15,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            }
+          ],
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: 2,
+            totalPages: 1
+          }
+        };
+      }
+
+      const client = createApiClient(accessToken);
+      const response = await client.get('/tags', {
+        params: { 
+          locationId,
+          limit,
+          offset: (page - 1) * limit
+        }
+      });
+      
+      return {
+        success: true,
+        data: response.data.tags || [],
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: response.data.count || 0,
+          totalPages: Math.ceil((response.data.count || 0) / limit)
+        }
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  /**
+   * Get list by ID
+   * @param {Object} params - Request parameters
+   * @returns {Promise<Object>} Response data
+   */
+  getListById: async ({ accessToken, locationId, listId }) => {
+    try {
+      // Check if we're in demo mode
+      if (!accessToken || accessToken.startsWith('demo-')) {
+        return {
+          success: true,
+          data: {
+            id: listId,
+            name: 'Demo List',
+            description: 'Demo list for testing',
+            tags: ['demo'],
+            leadCount: 10,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }
+        };
+      }
+
+      const client = createApiClient(accessToken);
+      const response = await client.get(`/tags/${listId}`, {
+        params: { locationId }
+      });
+      
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  /**
+   * Create a new list
+   * @param {Object} params - Request parameters
+   * @returns {Promise<Object>} Response data
+   */
+  createList: async ({ accessToken, locationId, listData }) => {
+    try {
+      // Check if we're in demo mode
+      if (!accessToken || accessToken.startsWith('demo-')) {
+        return {
+          success: true,
+          data: {
+            id: `demo-list-${Date.now()}`,
+            name: listData.name,
+            description: listData.description,
+            tags: listData.tags || [],
+            leadCount: 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+          message: 'List created successfully (demo mode)'
+        };
+      }
+
+      const client = createApiClient(accessToken);
+      const response = await client.post('/tags', {
+        locationId,
+        name: listData.name,
+        color: listData.color || '#007bff'
+      });
+      
+      return {
+        success: true,
+        data: response.data,
+        message: 'List created successfully'
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  /**
+   * Update a list
+   * @param {Object} params - Request parameters
+   * @returns {Promise<Object>} Response data
+   */
+  updateList: async ({ accessToken, locationId, listId, listData }) => {
+    try {
+      // Check if we're in demo mode
+      if (!accessToken || accessToken.startsWith('demo-')) {
+        return {
+          success: true,
+          data: {
+            id: listId,
+            name: listData.name,
+            description: listData.description,
+            tags: listData.tags || [],
+            leadCount: 10,
+            createdAt: new Date(Date.now() - 86400000).toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+          message: 'List updated successfully (demo mode)'
+        };
+      }
+
+      const client = createApiClient(accessToken);
+      const response = await client.put(`/tags/${listId}`, {
+        locationId,
+        name: listData.name,
+        color: listData.color || '#007bff'
+      });
+      
+      return {
+        success: true,
+        data: response.data,
+        message: 'List updated successfully'
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  /**
+   * Delete a list
+   * @param {Object} params - Request parameters
+   * @returns {Promise<Object>} Response data
+   */
+  deleteList: async ({ accessToken, locationId, listId }) => {
+    try {
+      // Check if we're in demo mode
+      if (!accessToken || accessToken.startsWith('demo-')) {
+        return {
+          success: true,
+          message: 'List deleted successfully (demo mode)'
+        };
+      }
+
+      const client = createApiClient(accessToken);
+      await client.delete(`/tags/${listId}`, {
+        params: { locationId }
+      });
+      
+      return {
+        success: true,
+        message: 'List deleted successfully'
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  /**
+   * Get all leads in a list
+   * @param {Object} params - Request parameters
+   * @returns {Promise<Object>} Response data
+   */
+  getListLeads: async ({ accessToken, locationId, listId, page = 1, limit = 20 }) => {
+    try {
+      // Check if we're in demo mode
+      if (!accessToken || accessToken.startsWith('demo-')) {
+        return {
+          success: true,
+          data: [
+            {
+              id: 'demo-lead-1',
+              firstName: 'John',
+              lastName: 'Doe',
+              email: 'john@example.com',
+              phone: '+1234567890',
+              company: 'Demo Company',
+              status: 'new',
+              addedAt: new Date().toISOString()
+            },
+            {
+              id: 'demo-lead-2',
+              firstName: 'Jane',
+              lastName: 'Smith',
+              email: 'jane@example.com',
+              phone: '+1234567891',
+              company: 'Demo Corp',
+              status: 'qualified',
+              addedAt: new Date().toISOString()
+            }
+          ],
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: 2,
+            totalPages: 1
+          }
+        };
+      }
+
+      const client = createApiClient(accessToken);
+      const response = await client.get('/contacts', {
+        params: { 
+          locationId,
+          tags: [listId],
+          limit,
+          offset: (page - 1) * limit
+        }
+      });
+      
+      return {
+        success: true,
+        data: response.data.contacts || [],
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: response.data.count || 0,
+          totalPages: Math.ceil((response.data.count || 0) / limit)
+        }
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  /**
+   * Add leads to a list
+   * @param {Object} params - Request parameters
+   * @returns {Promise<Object>} Response data
+   */
+  addLeadsToList: async ({ accessToken, locationId, listId, leadIds }) => {
+    try {
+      // Check if we're in demo mode
+      if (!accessToken || accessToken.startsWith('demo-')) {
+        return {
+          success: true,
+          message: `${leadIds.length} leads added to list successfully (demo mode)`,
+          added: leadIds.length,
+          failed: 0
+        };
+      }
+
+      const client = createApiClient(accessToken);
+      let added = 0;
+      let failed = 0;
+
+      for (const leadId of leadIds) {
+        try {
+          await client.put(`/contacts/${leadId}`, {
+            locationId,
+            tags: [listId]
+          });
+          added++;
+        } catch (error) {
+          failed++;
+        }
+      }
+      
+      return {
+        success: true,
+        message: `${added} leads added to list successfully`,
+        added,
+        failed
+      };
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  /**
+   * Remove lead from a list
+   * @param {Object} params - Request parameters
+   * @returns {Promise<Object>} Response data
+   */
+  removeLeadFromList: async ({ accessToken, locationId, listId, leadId }) => {
+    try {
+      // Check if we're in demo mode
+      if (!accessToken || accessToken.startsWith('demo-')) {
+        return {
+          success: true,
+          message: 'Lead removed from list successfully (demo mode)'
+        };
+      }
+
+      const client = createApiClient(accessToken);
+      
+      // Get current contact to remove the tag
+      const contactResponse = await client.get(`/contacts/${leadId}`, {
+        params: { locationId }
+      });
+      
+      const currentTags = contactResponse.data.tags || [];
+      const updatedTags = currentTags.filter(tag => tag !== listId);
+      
+      await client.put(`/contacts/${leadId}`, {
+        locationId,
+        tags: updatedTags
+      });
+      
+      return {
+        success: true,
+        message: 'Lead removed from list successfully'
       };
     } catch (error) {
       return handleApiError(error);

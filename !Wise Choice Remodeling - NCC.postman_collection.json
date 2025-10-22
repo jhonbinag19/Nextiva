@@ -1,0 +1,347 @@
+{
+	"info": {
+		"_postman_id": "2860e567-afa3-494a-ae80-e879dd3f0750",
+		"name": "!Wise Choice Remodeling - NCC",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "47507490",
+		"_collection_link": "https://luis-alcina-2114984.postman.co/workspace/47f176dd-bddc-42db-8094-c104ca64883c/collection/47507490-2860e567-afa3-494a-ae80-e879dd3f0750?action=share&source=collection_link&creator=47507490"
+	},
+	"item": [
+		{
+			"name": "SMS",
+			"item": [
+				{
+					"name": "Create SMS - Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"from\": \"+12094425035\",\n    \"campaignId\": \"68bedc382387185fa296dd3d\",\n    \"type\": \"sms\",\n    \"properties\": {\n        \"toAddress\": \"+12094425035\"\n    },\n    \"consumerData\": {\n        \"message\": \"This is a test message\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{location}}/workflows/api/webform",
+							"host": [
+								"{{location}}"
+							],
+							"path": [
+								"workflows",
+								"api",
+								"webform"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create SMS - templateId",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "{{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"from\": \"+12094425035\",\n    \"campaignId\": \"68bedc382387185fa296dd3d\",\n    \"type\": \"sms\",\n    \"properties\": {\n        \"toAddress\": \"+12392700111\"\n    },\n    \"consumerData\": {\n        \"bodyTemplateId\": \"68eea06fb190811f17f195f2\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{location}}/workflows/api/webform",
+							"host": [
+								"{{location}}"
+							],
+							"path": [
+								"workflows",
+								"api",
+								"webform"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Leads",
+			"item": [
+				{
+					"name": "upsert Lead - Arrray",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "apikey",
+							"apikey": [
+								{
+									"key": "value",
+									"value": "{{token}}",
+									"type": "string"
+								},
+								{
+									"key": "key",
+									"value": "Authorization",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "[\r\n    {\r\n        \"first_name\": \"Test First\",\r\n        \"last_name\": \"Test Last\",\r\n        \"phone\": \"2399999999\",\r\n        \"email\": \"test@nextiva.com\",\r\n        \"contactId\": \"123456789\",\r\n        \"timestamp\": \"10/10/25 9:00\",\r\n        \"pipeline_status\": \"New\",\r\n        \"followUp_timestampt\": \"\",\r\n        \"call_counter\": \"\",\r\n        \"contact_link\": \"\",\r\n        \"source\": \"\",\r\n        \"CID\": \"\"\r\n    }\r\n]",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{location}}/data/api/types/outboundlist/{{outboundListId}}/leadsupsert/",
+							"host": [
+								"{{location}}"
+							],
+							"path": [
+								"data",
+								"api",
+								"types",
+								"outboundlist",
+								"{{outboundListId}}",
+								"leadsupsert",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Reset Lead",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "{{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{location}}/data/api/types/outboundlist/{{outboundListId}}/resetlead/{{leadId}}",
+							"host": [
+								"{{location}}"
+							],
+							"path": [
+								"data",
+								"api",
+								"types",
+								"outboundlist",
+								"{{outboundListId}}",
+								"resetlead",
+								"{{leadId}}"
+							]
+						},
+						"description": "API used to reset a specific lead."
+					},
+					"response": []
+				},
+				{
+					"name": "Add Number to DNC",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "apikey",
+							"apikey": [
+								{
+									"key": "value",
+									"value": "{{token}}",
+									"type": "string"
+								},
+								{
+									"key": "key",
+									"value": "Authorization",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"objectType\": \"commconsent\",\r\n  \"campaignId\": null,\r\n  \"name\": \"\",\r\n  \"_adjustedByData\": true,\r\n  \"_showDialPad\": false,\r\n  \"_working\": true,\r\n  \"selected\": true,\r\n  \"_selected\": true,\r\n  \"address\": \"+1239999999\",\r\n  \"commType\": -108\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{location}}/data/api/types/commconsent",
+							"host": [
+								"{{location}}"
+							],
+							"path": [
+								"data",
+								"api",
+								"types",
+								"commconsent"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Authentication",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var data = pm.response.json();\r",
+							"pm.collectionVariables.set(\"token\", data.token);\r",
+							"pm.collectionVariables.set(\"location\", data.location);"
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "GHLwiseChoiceAPI2025!!",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "nextiva+wisechoiceremodeling@wisechoiceremodel.com",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://nextiva.thrio.io/provider/token-with-authorities",
+					"protocol": "https",
+					"host": [
+						"nextiva",
+						"thrio",
+						"io"
+					],
+					"path": [
+						"provider",
+						"token-with-authorities"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"auth": {
+		"type": "apikey",
+		"apikey": [
+			{
+				"key": "value",
+				"value": "{{token}}",
+				"type": "string"
+			},
+			{
+				"key": "key",
+				"value": "Authorization",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "token",
+			"value": ""
+		},
+		{
+			"key": "location",
+			"value": ""
+		},
+		{
+			"key": "outboundListId",
+			"value": ""
+		},
+		{
+			"key": "leadId",
+			"value": ""
+		}
+	]
+}

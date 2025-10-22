@@ -394,9 +394,25 @@ const validateExternalAuth = async (req, res) => {
     }
     
     // Return success response with clear indication of authentication mode
+    // Generate JWT token for our API
+    const jwtToken = jwt.sign(
+      {
+        ghlAccessToken: thrioAuthResult.accessToken,
+        ghlRefreshToken: thrioAuthResult.refreshToken,
+        locationId: locationId || 'demo-location-id',
+        scope: thrioAuthResult.scope,
+        tokenExpiry: Date.now() + (thrioAuthResult.expiresIn * 1000)
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
     res.status(200).json({
       success: true,
       message: 'Authentication successful',
+      token: jwtToken, // JWT token for API authentication
+      expiresIn: 86400, // 24 hours in seconds
+      tokenType: 'Bearer',
       authMode: authMode, // NEW: Clearly indicate which authentication mode was used
       isDemo: !!thrioAuthResult.demo, // NEW: Explicitly mark if this is a demo token
       user: {
