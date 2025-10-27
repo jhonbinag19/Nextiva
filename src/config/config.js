@@ -10,10 +10,10 @@ const config = {
   
   // JWT configuration
   jwt: {
-    secret: process.env.JWT_SECRET,
-    refreshSecret: process.env.JWT_REFRESH_SECRET,
-    expiresIn: '24h',
-    refreshExpiresIn: '7d'
+    secret: process.env.JWT_SECRET || 'default-jwt-secret-for-development',
+    refreshSecret: process.env.JWT_REFRESH_SECRET || 'default-refresh-secret-for-development',
+    expiresIn: '30d',
+    refreshExpiresIn: '30d'
   },
   
   // API configuration
