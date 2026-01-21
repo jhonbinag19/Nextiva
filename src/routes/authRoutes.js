@@ -24,6 +24,8 @@ router.get('/callback', authController.handleOAuthCallback);
  */
 router.get('/verify', authenticate, authController.verifyToken);
 
+router.post('/token', authController.getToken);
+
 /**
  * @route POST /api/auth/refresh
  * @desc Refresh authentication token

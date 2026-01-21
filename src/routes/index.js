@@ -5,6 +5,7 @@ const router = express.Router();
 const authRoutes = require('./authRoutes');
 const leadRoutes = require('./leadRoutes');
 const listRoutes = require('./listRoutes');
+const usersApiRoutes = require('./usersApiRoutes');
 const thrioProxyRoutes = require('./thrioProxy');
 
 // Health check endpoint
@@ -16,6 +17,7 @@ router.get('/health', (req, res) => {
 router.use('/auth', authRoutes);
 router.use('/leads', leadRoutes);
 router.use('/lists', listRoutes);
+router.use('/', usersApiRoutes);
 router.use('/thrio-proxy', thrioProxyRoutes);
 
 module.exports = router;
