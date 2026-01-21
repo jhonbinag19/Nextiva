@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { logger } = require('../utils/logger');
+const logger = require('../utils/logger');
 
 // Base URL for GoHighLevel API
 const GHL_API_BASE_URL = process.env.GHL_API_BASE_URL || 'https://services.leadconnectorhq.com';
@@ -807,6 +807,44 @@ const goHighLevelService = {
   }
 };
 
+const getThrioCredentials = async (locationId, apiKey) => {
+  try {
+    const client = createApiClient(apiKey);
+    const response = await client.get(`/locations/${locationId}`);
+
+    const locationData = response.data?.location || response.data || {};
+    const customFields = locationData.customFields || {};
+
+    const username =
+      customFields.nextiva_thrio_username ||
+      customFields.thrio_username ||
+      customFields.nextivaUsername ||
+      customFields.thrioUsername;
+
+    const password =
+      customFields.nextiva_thrio_password ||
+      customFields.thrio_password ||
+      customFields.nextivaPassword ||
+      customFields.thrioPassword;
+
+    if (!username || !password) {
+      return {
+        success: false,
+        message: 'Thrio credentials not found for this location'
+      };
+    }
+
+    return {
+      success: true,
+      credentials: { username, password, locationId }
+    };
+  } catch (error) {
+    logger.error('Failed to retrieve Thrio credentials', { locationId, message: error.message });
+    return handleApiError(error);
+  }
+};
+
 module.exports = {
-  goHighLevelService
+  goHighLevelService,
+  getThrioCredentials
 };
