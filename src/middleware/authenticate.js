@@ -1,7 +1,7 @@
 const logger = require('../utils/logger');
 const config = require('../config/config');
-const { nextivaCrmService } = require('../services/nextivaCrmService');
 const { getThrioCredentials } = require('../services/goHighLevelService');
+const { authenticateWithThrioRealAPI } = require('../controllers/authController');
 
 const authenticate = async (req, res, next) => {
   try {
@@ -16,6 +16,8 @@ const authenticate = async (req, res, next) => {
 
     let username = null;
     let password = null;
+    const headerUsername = req.headers['x-thrio-username'] || req.headers['x-nextiva-username'] || null;
+    const headerPassword = req.headers['x-thrio-password'] || req.headers['x-nextiva-password'] || null;
 
     if (scheme === 'Basic' && tokenOrCreds) {
       let decodedCreds;
@@ -30,6 +32,9 @@ const authenticate = async (req, res, next) => {
       }
       username = decodedCreds.substring(0, sepIndex);
       password = decodedCreds.substring(sepIndex + 1);
+    } else if (scheme === 'Bearer' && tokenOrCreds && headerUsername && headerPassword) {
+      username = headerUsername;
+      password = headerPassword;
     } else if (scheme === 'Bearer' && tokenOrCreds && ghlApiKey && locationId) {
       const stored = await getThrioCredentials(locationId, ghlApiKey);
       if (!stored.success) {
@@ -40,7 +45,7 @@ const authenticate = async (req, res, next) => {
     } else {
       return res.status(401).json({
         success: false,
-        message: 'Invalid authorization format. Use Basic <base64(username:password)> or Bearer with X-GHL-API-Key and X-GHL-Location-Id'
+        message: 'Invalid authorization format. Use Basic <base64(username:password)> or Bearer with X-THRIO-USERNAME/X-THRIO-PASSWORD, or Bearer with X-GHL-API-Key and X-GHL-Location-Id'
       });
     }
 
@@ -51,15 +56,15 @@ const authenticate = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'X-GHL-API-Key and X-GHL-Location-Id headers are required' });
     }
 
-    const validation = await nextivaCrmService.validateCredentials(username, password);
-    if (!validation.success) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials', details: validation.error });
+    const authResult = await authenticateWithThrioRealAPI(username, password);
+    if (!authResult.success) {
+      return res.status(401).json({ success: false, message: 'Invalid credentials', details: authResult.message || authResult.error });
     }
 
     req.user = {
       username,
-      thrioAccessToken: validation.token,
-      thrioBaseUrl: validation.location || validation.clientLocation || config.api.thrio.baseUrl,
+      thrioAccessToken: authResult.accessToken,
+      thrioBaseUrl: config.api.thrio.baseUrl,
       locationId,
       apiKey: ghlApiKey,
       ghlAccessToken: ghlApiKey,

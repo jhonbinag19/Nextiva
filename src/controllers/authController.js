@@ -613,8 +613,8 @@ const fetchCredentialsFromGoHighLevel = async (apiKey, locationId) => {
  */
 const authenticateWithThrioRealAPI = async (username, password) => {
   try {
-    const { baseUrl, tokenEndpoint } = config.api.thrio;
-    const tokenUrl = `${baseUrl}${tokenEndpoint}`;
+    const { authBaseUrl, baseUrl, tokenEndpoint } = config.api.thrio;
+    const tokenUrl = `${authBaseUrl || baseUrl}${tokenEndpoint}`;
     
     if (logger && logger.info) {
       logger.info('Attempting REAL Thrio authentication for user:', username || 'unknown');
@@ -847,5 +847,7 @@ module.exports = {
   handleOAuthCallback,
   verifyToken,
   refreshToken,
-  validateExternalAuth
+  validateExternalAuth,
+  authenticateWithThrio,
+  authenticateWithThrioRealAPI
 };
