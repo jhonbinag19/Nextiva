@@ -1,7 +1,7 @@
 const logger = require('../utils/logger');
 const config = require('../config/config');
 const { getThrioCredentials } = require('../services/goHighLevelService');
-const { authenticateWithThrioRealAPI } = require('../controllers/authController');
+const { authenticateWithThrio } = require('../controllers/authController');
 
 const authenticate = async (req, res, next) => {
   try {
@@ -56,7 +56,7 @@ const authenticate = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'X-GHL-API-Key and X-GHL-Location-Id headers are required' });
     }
 
-    const authResult = await authenticateWithThrioRealAPI(username, password);
+    const authResult = await authenticateWithThrio(username, password);
     if (!authResult.success) {
       return res.status(401).json({ success: false, message: 'Invalid credentials', details: authResult.message || authResult.error });
     }
