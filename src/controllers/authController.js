@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const axios = require('axios');
 const logger = require('../utils/logger');
 const config = require('../config/config');
-const { goHighLevelService } = require('../services/goHighLevelService');
+const { goHighLevelService, getThrioCredentials, setThrioCredentials } = require('../services/goHighLevelService');
 const { nextivaCrmService } = require('../services/nextivaCrmService');
 
 /**
@@ -174,10 +174,6 @@ const getToken = async (req, res, next) => {
   try {
     const { username, password, apiKey, locationId } = req.body || {};
 
-    if (!username || !password) {
-      return res.status(400).json({ success: false, message: 'Username and password are required' });
-    }
-
     const ghlApiKey = apiKey || req.headers['x-ghl-api-key'] || null;
     const ghlLocationId = locationId || req.headers['x-ghl-location-id'] || req.headers['x-location-id'] || null;
 
@@ -194,7 +190,19 @@ const getToken = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'GHL apiKey does not match locationId' });
     }
 
-    const thrioAuthResult = await authenticateWithThrio(username, password);
+    let credsUsername = username || null;
+    let credsPassword = password || null;
+
+    if (!credsUsername || !credsPassword) {
+      const stored = await getThrioCredentials(ghlLocationId, ghlApiKey);
+      if (!stored?.success) {
+        return res.status(401).json({ success: false, message: 'Stored Thrio credentials not found for location', details: stored?.message });
+      }
+      credsUsername = stored.credentials.username;
+      credsPassword = stored.credentials.password;
+    }
+
+    const thrioAuthResult = await authenticateWithThrio(credsUsername, credsPassword);
     if (!thrioAuthResult?.success) {
       return res.status(401).json({
         success: false,
@@ -206,7 +214,7 @@ const getToken = async (req, res, next) => {
     const expiresInSeconds = Math.max(60, Math.min(Number(thrioAuthResult.expiresIn) || 3600, 86400));
 
     const tokenPayload = {
-      username,
+      username: credsUsername,
       locationId: ghlLocationId,
       ghlLocationId: ghlLocationId,
       ghlAccessToken: ghlApiKey,
@@ -221,7 +229,7 @@ const getToken = async (req, res, next) => {
     if (process.env.JWT_REFRESH_SECRET) {
       refreshToken = jwt.sign(
         {
-          username,
+          username: credsUsername,
           locationId: ghlLocationId,
           ghlLocationId: ghlLocationId,
           ghlAccessToken: ghlApiKey,
@@ -239,7 +247,7 @@ const getToken = async (req, res, next) => {
       expiresIn: expiresInSeconds,
       tokenType: 'Bearer',
       user: {
-        username,
+        username: credsUsername,
         locationId: ghlLocationId,
         authorities: thrioAuthResult.authorities || []
       }
@@ -465,6 +473,16 @@ const validateExternalAuth = async (req, res) => {
     process.env.THRIO_ACCESS_TOKEN = thrioAuthResult?.accessToken;
     if (thrioAuthResult?.refreshToken) {
       process.env.THRIO_REFRESH_TOKEN = thrioAuthResult.refreshToken;
+    }
+
+    if (apiKey && locationId) {
+      const storeResult = await setThrioCredentials(locationId, apiKey, {
+        username: credentialsToUse.username,
+        password: credentialsToUse.password
+      });
+      if (!storeResult?.success) {
+        logger.warn('Failed to store Thrio credentials to GHL location', { locationId, message: storeResult?.message });
+      }
     }
     
     if (logger && logger.info) {

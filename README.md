@@ -83,13 +83,13 @@ The project includes a `vercel.json` configuration file that sets up the proper 
 
 ### Authentication
 
-#### Get Token (Username/Password)
+#### Marketplace Install (One-Time)
 
 ```
-POST /api/auth/token
+POST /api/auth/validate
 ```
 
-Request body:
+Request body (called by GoHighLevel during app install):
 ```json
 {
   "username": "your_thrio_username",
@@ -101,9 +101,17 @@ Request body:
 
 #### Protected Endpoint Authentication Format
 
-All protected endpoints use the JWT token returned by `/api/auth/token`:
+After installation, protected endpoints can authenticate using the GHL location context (the Thrio credentials are stored on the location):
 
 ```
+X-GHL-API-Key: <your_ghl_location_api_key_or_private_integration_token>
+X-GHL-Location-Id: <your_ghl_location_id>
+```
+
+Optional: You can also generate a JWT and use it instead:
+
+```
+POST /api/auth/token
 Authorization: Bearer <jwt_token_from_/api/auth/token>
 ```
 
@@ -359,13 +367,11 @@ This API server is designed to work with GoHighLevel marketplace, workflows, and
 
 ### Authentication
 
-1. Get a JWT token:
+1. During marketplace install, GoHighLevel validates and stores the credentials:
 
 ```
-POST /api/auth/token
+POST /api/auth/validate
 ```
-
-Body:
 
 ```json
 {
@@ -376,10 +382,11 @@ Body:
 }
 ```
 
-2. Use that token on every protected request:
+2. Workflow actions can call protected endpoints using the location context:
 
 ```
-Authorization: Bearer <jwt_token_from_/api/auth/token>
+X-GHL-API-Key: <your_ghl_location_api_key_or_private_integration_token>
+X-GHL-Location-Id: <your_ghl_location_id>
 ```
 
 ### Outbound List Endpoints

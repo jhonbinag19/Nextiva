@@ -6,30 +6,7 @@ const { authenticateWithThrio } = require('../controllers/authController');
 
 const authenticate = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return res.status(401).json({ success: false, message: 'Authorization header is missing' });
-    }
-
-    const [scheme, tokenOrCreds] = authHeader.split(' ');
-    if (scheme === 'Bearer' && tokenOrCreds && process.env.JWT_SECRET) {
-      try {
-        const decoded = jwt.verify(tokenOrCreds, process.env.JWT_SECRET);
-        req.user = {
-          ...decoded,
-          username: decoded.username,
-          locationId: decoded.locationId || decoded.ghlLocationId || null,
-          ghlLocationId: decoded.ghlLocationId || decoded.locationId || null,
-          ghlAccessToken: decoded.ghlAccessToken || null,
-          apiKey: decoded.ghlAccessToken || null,
-          thrioAccessToken: decoded.thrioAccessToken || null,
-          thrioBaseUrl: decoded.thrioBaseUrl || config.api.thrio.baseUrl
-        };
-        return next();
-      } catch {
-      }
-    }
-
+    const authHeader = req.headers.authorization || null;
     const locationId = req.headers['x-ghl-location-id'] || req.headers['x-location-id'] || null;
     const ghlApiKey = req.headers['x-ghl-api-key'] || null;
 
@@ -38,7 +15,28 @@ const authenticate = async (req, res, next) => {
     const headerUsername = req.headers['x-thrio-username'] || req.headers['x-nextiva-username'] || null;
     const headerPassword = req.headers['x-thrio-password'] || req.headers['x-nextiva-password'] || null;
 
-    if (scheme === 'Basic' && tokenOrCreds) {
+    if (authHeader) {
+      const [scheme, tokenOrCreds] = authHeader.split(' ');
+
+      if (scheme === 'Bearer' && tokenOrCreds && process.env.JWT_SECRET) {
+        try {
+          const decoded = jwt.verify(tokenOrCreds, process.env.JWT_SECRET);
+          req.user = {
+            ...decoded,
+            username: decoded.username,
+            locationId: decoded.locationId || decoded.ghlLocationId || null,
+            ghlLocationId: decoded.ghlLocationId || decoded.locationId || null,
+            ghlAccessToken: decoded.ghlAccessToken || null,
+            apiKey: decoded.ghlAccessToken || null,
+            thrioAccessToken: decoded.thrioAccessToken || null,
+            thrioBaseUrl: decoded.thrioBaseUrl || config.api.thrio.baseUrl
+          };
+          return next();
+        } catch {
+        }
+      }
+
+      if (scheme === 'Basic' && tokenOrCreds) {
       let decodedCreds;
       try {
         decodedCreds = Buffer.from(tokenOrCreds, 'base64').toString('utf8');
@@ -51,10 +49,23 @@ const authenticate = async (req, res, next) => {
       }
       username = decodedCreds.substring(0, sepIndex);
       password = decodedCreds.substring(sepIndex + 1);
-    } else if (scheme === 'Bearer' && tokenOrCreds && headerUsername && headerPassword) {
+      } else if (scheme === 'Bearer' && tokenOrCreds && headerUsername && headerPassword) {
       username = headerUsername;
       password = headerPassword;
-    } else if (scheme === 'Bearer' && tokenOrCreds && ghlApiKey && locationId) {
+      } else if (scheme === 'Bearer' && tokenOrCreds && ghlApiKey && locationId) {
+      const stored = await getThrioCredentials(locationId, ghlApiKey);
+      if (!stored.success) {
+        return res.status(401).json({ success: false, message: 'Stored credentials not found for location', details: stored.message });
+      }
+      username = stored.credentials.username;
+      password = stored.credentials.password;
+      } else {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid authorization format. Use Bearer <jwt>, or provide X-GHL-API-Key and X-GHL-Location-Id, or use Basic <base64(username:password)>'
+      });
+    }
+    } else if (ghlApiKey && locationId) {
       const stored = await getThrioCredentials(locationId, ghlApiKey);
       if (!stored.success) {
         return res.status(401).json({ success: false, message: 'Stored credentials not found for location', details: stored.message });
@@ -62,10 +73,7 @@ const authenticate = async (req, res, next) => {
       username = stored.credentials.username;
       password = stored.credentials.password;
     } else {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid authorization format. Use Basic <base64(username:password)> or Bearer with X-THRIO-USERNAME/X-THRIO-PASSWORD, or Bearer with X-GHL-API-Key and X-GHL-Location-Id'
-      });
+      return res.status(401).json({ success: false, message: 'Authorization is required' });
     }
 
     if (!username || !password) {

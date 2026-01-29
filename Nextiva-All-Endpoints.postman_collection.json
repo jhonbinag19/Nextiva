@@ -25,7 +25,7 @@
       "name": "Auth",
       "item": [
         {
-          "name": "POST /api/auth/token",
+          "name": "POST /api/auth/validate (install)",
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
@@ -34,32 +34,21 @@
               "raw": "{\n  \"username\": \"{{thrioUsername}}\",\n  \"password\": \"{{thrioPassword}}\",\n  \"apiKey\": \"{{ghlApiKey}}\",\n  \"locationId\": \"{{ghlLocationId}}\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/auth/token",
+              "raw": "{{baseUrl}}/api/auth/validate",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "token"]
+              "path": ["api", "auth", "validate"]
             }
           },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const json = pm.response.json();",
-                  "if (json && json.token) {",
-                  "  pm.environment.set('authToken', json.token);",
-                  "}"
-                ]
-              }
-            }
-          ]
+          "event": []
         },
         {
           "name": "GET /api/auth/verify",
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "X-GHL-API-Key", "value": "{{ghlApiKey}}" },
+              { "key": "X-GHL-Location-Id", "value": "{{ghlLocationId}}" }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/auth/verify",
@@ -78,7 +67,9 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "X-GHL-API-Key", "value": "{{ghlApiKey}}" },
+              { "key": "X-GHL-Location-Id", "value": "{{ghlLocationId}}" }
             ],
             "url": { "raw": "{{baseUrl}}/api/leads", "host": ["{{baseUrl}}"], "path": ["api", "leads"] }
           }
@@ -89,6 +80,8 @@
             "method": "POST",
             "header": [
               { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "X-GHL-API-Key", "value": "{{ghlApiKey}}" },
+              { "key": "X-GHL-Location-Id", "value": "{{ghlLocationId}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
@@ -108,7 +101,9 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+              { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "X-GHL-API-Key", "value": "{{ghlApiKey}}" },
+              { "key": "X-GHL-Location-Id", "value": "{{ghlLocationId}}" }
             ],
             "url": { "raw": "{{baseUrl}}/api/lists", "host": ["{{baseUrl}}"], "path": ["api", "lists"] }
           }
@@ -124,6 +119,8 @@
             "method": "POST",
             "header": [
               { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "X-GHL-API-Key", "value": "{{ghlApiKey}}" },
+              { "key": "X-GHL-Location-Id", "value": "{{ghlLocationId}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
@@ -143,6 +140,8 @@
             "method": "POST",
             "header": [
               { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "X-GHL-API-Key", "value": "{{ghlApiKey}}" },
+              { "key": "X-GHL-Location-Id", "value": "{{ghlLocationId}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
@@ -167,6 +166,8 @@
             "method": "POST",
             "header": [
               { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "X-GHL-API-Key", "value": "{{ghlApiKey}}" },
+              { "key": "X-GHL-Location-Id", "value": "{{ghlLocationId}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
             "body": { "mode": "raw", "raw": "{\n  \"name\": \"Test Campaign Outbound List\"\n}" },
@@ -188,6 +189,8 @@
             "method": "POST",
             "header": [
               { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "X-GHL-API-Key", "value": "{{ghlApiKey}}" },
+              { "key": "X-GHL-Location-Id", "value": "{{ghlLocationId}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
             "body": { "mode": "raw", "raw": "{\n  \"message\": \"test\",\n  \"to\": \"+15555555555\"\n}" },
@@ -200,6 +203,8 @@
             "method": "POST",
             "header": [
               { "key": "Authorization", "value": "Bearer {{authToken}}" },
+              { "key": "X-GHL-API-Key", "value": "{{ghlApiKey}}" },
+              { "key": "X-GHL-Location-Id", "value": "{{ghlLocationId}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
             "body": { "mode": "raw", "raw": "{\n  \"message\": \"test\"\n}" },
