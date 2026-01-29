@@ -5,6 +5,7 @@ const morgan = require('morgan');
 const errorHandler = require('./middleware/errorHandler');
 const corsConfig = require('./config/corsConfig');
 const routes = require('./routes');
+const outboundListRoutes = require('./routes/outboundListRoutes');
 const logger = require('./utils/logger');
 const config = require('./config/config');
 
@@ -23,6 +24,7 @@ app.use(morgan('combined', { stream: { write: message => logger.info(message.tri
 
 // Apply routes
 app.use('/api', routes);
+app.use('/', outboundListRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {

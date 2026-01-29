@@ -121,7 +121,7 @@
       "name": "Outbound List Lead",
       "item": [
         {
-          "name": "POST /api/data/api/types/outboundlist/:outboundListId/lead (dynamic)",
+          "name": "POST /data/api/types/outboundlist/:outboundListId/lead (dynamic)",
           "request": {
             "method": "POST",
             "header": [
@@ -137,14 +137,14 @@
               "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"phone\": \"+15555555555\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/data/api/types/outboundlist/{{outboundListId}}/lead",
+              "raw": "{{baseUrl}}/data/api/types/outboundlist/{{outboundListId}}/lead",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "data", "api", "types", "outboundlist", "{{outboundListId}}", "lead"]
+              "path": ["data", "api", "types", "outboundlist", "{{outboundListId}}", "lead"]
             }
           }
         },
         {
-          "name": "POST /api/data/api/types/outboundlist/64da53c8bd2e2743914906a1/lead",
+          "name": "POST /data/api/types/outboundlist/64da53c8bd2e2743914906a1/lead",
           "request": {
             "method": "POST",
             "header": [
@@ -160,9 +160,9 @@
               "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"phone\": \"+15555555555\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/data/api/types/outboundlist/64da53c8bd2e2743914906a1/lead",
+              "raw": "{{baseUrl}}/data/api/types/outboundlist/64da53c8bd2e2743914906a1/lead",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "data", "api", "types", "outboundlist", "64da53c8bd2e2743914906a1", "lead"]
+              "path": ["data", "api", "types", "outboundlist", "64da53c8bd2e2743914906a1", "lead"]
             }
           }
         }
@@ -172,7 +172,7 @@
       "name": "Campaign Outbound List",
       "item": [
         {
-          "name": "POST /api/data/api/types/campaignoutboundlist",
+          "name": "POST /data/api/types/campaignoutboundlist",
           "request": {
             "method": "POST",
             "header": [
@@ -185,9 +185,9 @@
             ],
             "body": { "mode": "raw", "raw": "{\n  \"name\": \"Test Campaign Outbound List\"\n}" },
             "url": {
-              "raw": "{{baseUrl}}/api/data/api/types/campaignoutboundlist",
+              "raw": "{{baseUrl}}/data/api/types/campaignoutboundlist",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "data", "api", "types", "campaignoutboundlist"]
+              "path": ["data", "api", "types", "campaignoutboundlist"]
             }
           }
         }

@@ -397,19 +397,19 @@ X-GHL-Location-Id: <your_ghl_location_id>
 Create a lead in an outbound list:
 
 ```
-POST /api/data/api/types/outboundlist/:outboundListId/lead
-POST /api/data/api/types/outboundlist/64da53c8bd2e2743914906a1/lead
-POST /api/data/api/types/outboundlist/693c3a02a1e63d1632b8830b/lead
-POST /api/data/api/types/outboundlist/693c3a27fdf2523859bc31ea/lead
-POST /api/data/api/types/outboundlist/693c3a3f17aad25152e139b9/lead
-POST /api/data/api/types/outboundlist/693c3a5584c45a1b7bac8d96/lead
-POST /api/data/api/types/outboundlist/693c3a6d08e5134207591087/lead
+POST /data/api/types/outboundlist/:outboundListId/lead
+POST /data/api/types/outboundlist/64da53c8bd2e2743914906a1/lead
+POST /data/api/types/outboundlist/693c3a02a1e63d1632b8830b/lead
+POST /data/api/types/outboundlist/693c3a27fdf2523859bc31ea/lead
+POST /data/api/types/outboundlist/693c3a3f17aad25152e139b9/lead
+POST /data/api/types/outboundlist/693c3a5584c45a1b7bac8d96/lead
+POST /data/api/types/outboundlist/693c3a6d08e5134207591087/lead
 ```
 
 Create a campaign outbound list:
 
 ```
-POST /api/data/api/types/campaignoutboundlist
+POST /data/api/types/campaignoutboundlist
 ```
 
 ### Users SMS Endpoint
