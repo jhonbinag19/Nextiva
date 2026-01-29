@@ -25,31 +25,41 @@
       "name": "Auth",
       "item": [
         {
-          "name": "POST /api/auth/validate",
+          "name": "POST /api/auth/token",
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"{{thrioUsername}}\",\n  \"password\": \"{{thrioPassword}}\"\n}"
+              "raw": "{\n  \"username\": \"{{thrioUsername}}\",\n  \"password\": \"{{thrioPassword}}\",\n  \"apiKey\": \"{{ghlApiKey}}\",\n  \"locationId\": \"{{ghlLocationId}}\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/auth/validate",
+              "raw": "{{baseUrl}}/api/auth/token",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "validate"]
+              "path": ["api", "auth", "token"]
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.token) {",
+                  "  pm.environment.set('authToken', json.token);",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "GET /api/auth/verify",
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "X-GHL-API-Key", "value": "{{ghlApiKey}}" },
-              { "key": "X-GHL-Location-Id", "value": "{{ghlLocationId}}" },
-              { "key": "X-THRIO-USERNAME", "value": "{{thrioUsername}}" },
-              { "key": "X-THRIO-PASSWORD", "value": "{{thrioPassword}}" }
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
             ],
             "url": {
               "raw": "{{baseUrl}}/api/auth/verify",
@@ -68,11 +78,7 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "X-GHL-API-Key", "value": "{{ghlApiKey}}" },
-              { "key": "X-GHL-Location-Id", "value": "{{ghlLocationId}}" },
-              { "key": "X-THRIO-USERNAME", "value": "{{thrioUsername}}" },
-              { "key": "X-THRIO-PASSWORD", "value": "{{thrioPassword}}" }
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
             ],
             "url": { "raw": "{{baseUrl}}/api/leads", "host": ["{{baseUrl}}"], "path": ["api", "leads"] }
           }
@@ -83,10 +89,6 @@
             "method": "POST",
             "header": [
               { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "X-GHL-API-Key", "value": "{{ghlApiKey}}" },
-              { "key": "X-GHL-Location-Id", "value": "{{ghlLocationId}}" },
-              { "key": "X-THRIO-USERNAME", "value": "{{thrioUsername}}" },
-              { "key": "X-THRIO-PASSWORD", "value": "{{thrioPassword}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
@@ -106,11 +108,7 @@
           "request": {
             "method": "GET",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "X-GHL-API-Key", "value": "{{ghlApiKey}}" },
-              { "key": "X-GHL-Location-Id", "value": "{{ghlLocationId}}" },
-              { "key": "X-THRIO-USERNAME", "value": "{{thrioUsername}}" },
-              { "key": "X-THRIO-PASSWORD", "value": "{{thrioPassword}}" }
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
             ],
             "url": { "raw": "{{baseUrl}}/api/lists", "host": ["{{baseUrl}}"], "path": ["api", "lists"] }
           }
@@ -126,10 +124,6 @@
             "method": "POST",
             "header": [
               { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "X-GHL-API-Key", "value": "{{ghlApiKey}}" },
-              { "key": "X-GHL-Location-Id", "value": "{{ghlLocationId}}" },
-              { "key": "X-THRIO-USERNAME", "value": "{{thrioUsername}}" },
-              { "key": "X-THRIO-PASSWORD", "value": "{{thrioPassword}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
@@ -149,10 +143,6 @@
             "method": "POST",
             "header": [
               { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "X-GHL-API-Key", "value": "{{ghlApiKey}}" },
-              { "key": "X-GHL-Location-Id", "value": "{{ghlLocationId}}" },
-              { "key": "X-THRIO-USERNAME", "value": "{{thrioUsername}}" },
-              { "key": "X-THRIO-PASSWORD", "value": "{{thrioPassword}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
             "body": {
@@ -177,10 +167,6 @@
             "method": "POST",
             "header": [
               { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "X-GHL-API-Key", "value": "{{ghlApiKey}}" },
-              { "key": "X-GHL-Location-Id", "value": "{{ghlLocationId}}" },
-              { "key": "X-THRIO-USERNAME", "value": "{{thrioUsername}}" },
-              { "key": "X-THRIO-PASSWORD", "value": "{{thrioPassword}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
             "body": { "mode": "raw", "raw": "{\n  \"name\": \"Test Campaign Outbound List\"\n}" },
@@ -202,10 +188,6 @@
             "method": "POST",
             "header": [
               { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "X-GHL-API-Key", "value": "{{ghlApiKey}}" },
-              { "key": "X-GHL-Location-Id", "value": "{{ghlLocationId}}" },
-              { "key": "X-THRIO-USERNAME", "value": "{{thrioUsername}}" },
-              { "key": "X-THRIO-PASSWORD", "value": "{{thrioPassword}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
             "body": { "mode": "raw", "raw": "{\n  \"message\": \"test\",\n  \"to\": \"+15555555555\"\n}" },
@@ -218,10 +200,6 @@
             "method": "POST",
             "header": [
               { "key": "Authorization", "value": "Bearer {{authToken}}" },
-              { "key": "X-GHL-API-Key", "value": "{{ghlApiKey}}" },
-              { "key": "X-GHL-Location-Id", "value": "{{ghlLocationId}}" },
-              { "key": "X-THRIO-USERNAME", "value": "{{thrioUsername}}" },
-              { "key": "X-THRIO-PASSWORD", "value": "{{thrioPassword}}" },
               { "key": "Content-Type", "value": "application/json" }
             ],
             "body": { "mode": "raw", "raw": "{\n  \"message\": \"test\"\n}" },

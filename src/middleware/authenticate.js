@@ -1,5 +1,6 @@
 const logger = require('../utils/logger');
 const config = require('../config/config');
+const jwt = require('jsonwebtoken');
 const { getThrioCredentials } = require('../services/goHighLevelService');
 const { authenticateWithThrio } = require('../controllers/authController');
 
@@ -11,6 +12,24 @@ const authenticate = async (req, res, next) => {
     }
 
     const [scheme, tokenOrCreds] = authHeader.split(' ');
+    if (scheme === 'Bearer' && tokenOrCreds && process.env.JWT_SECRET) {
+      try {
+        const decoded = jwt.verify(tokenOrCreds, process.env.JWT_SECRET);
+        req.user = {
+          ...decoded,
+          username: decoded.username,
+          locationId: decoded.locationId || decoded.ghlLocationId || null,
+          ghlLocationId: decoded.ghlLocationId || decoded.locationId || null,
+          ghlAccessToken: decoded.ghlAccessToken || null,
+          apiKey: decoded.ghlAccessToken || null,
+          thrioAccessToken: decoded.thrioAccessToken || null,
+          thrioBaseUrl: decoded.thrioBaseUrl || config.api.thrio.baseUrl
+        };
+        return next();
+      } catch {
+      }
+    }
+
     const locationId = req.headers['x-ghl-location-id'] || req.headers['x-location-id'] || null;
     const ghlApiKey = req.headers['x-ghl-api-key'] || null;
 

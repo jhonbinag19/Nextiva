@@ -170,6 +170,86 @@ const verifyToken = (req, res) => {
   });
 };
 
+const getToken = async (req, res, next) => {
+  try {
+    const { username, password, apiKey, locationId } = req.body || {};
+
+    if (!username || !password) {
+      return res.status(400).json({ success: false, message: 'Username and password are required' });
+    }
+
+    const ghlApiKey = apiKey || req.headers['x-ghl-api-key'] || null;
+    const ghlLocationId = locationId || req.headers['x-ghl-location-id'] || req.headers['x-location-id'] || null;
+
+    if (!ghlApiKey || !ghlLocationId) {
+      return res.status(400).json({ success: false, message: 'GHL apiKey and locationId are required' });
+    }
+
+    if (!process.env.JWT_SECRET) {
+      return res.status(500).json({ success: false, message: 'JWT_SECRET is not configured' });
+    }
+
+    const ghlValidation = await goHighLevelService.validateApiKey(ghlApiKey);
+    if (ghlValidation?.success && ghlValidation.locationId && ghlValidation.locationId !== ghlLocationId) {
+      return res.status(401).json({ success: false, message: 'GHL apiKey does not match locationId' });
+    }
+
+    const thrioAuthResult = await authenticateWithThrio(username, password);
+    if (!thrioAuthResult?.success) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid Thrio credentials',
+        details: thrioAuthResult?.message || thrioAuthResult?.error
+      });
+    }
+
+    const expiresInSeconds = Math.max(60, Math.min(Number(thrioAuthResult.expiresIn) || 3600, 86400));
+
+    const tokenPayload = {
+      username,
+      locationId: ghlLocationId,
+      ghlLocationId: ghlLocationId,
+      ghlAccessToken: ghlApiKey,
+      thrioAccessToken: thrioAuthResult.accessToken,
+      thrioBaseUrl: config.api.thrio.baseUrl,
+      authorities: thrioAuthResult.authorities || []
+    };
+
+    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, { expiresIn: expiresInSeconds });
+
+    let refreshToken;
+    if (process.env.JWT_REFRESH_SECRET) {
+      refreshToken = jwt.sign(
+        {
+          username,
+          locationId: ghlLocationId,
+          ghlLocationId: ghlLocationId,
+          ghlAccessToken: ghlApiKey,
+          thrioRefreshToken: thrioAuthResult.refreshToken || null
+        },
+        process.env.JWT_REFRESH_SECRET,
+        { expiresIn: '7d' }
+      );
+    }
+
+    res.status(200).json({
+      success: true,
+      token,
+      refreshToken,
+      expiresIn: expiresInSeconds,
+      tokenType: 'Bearer',
+      user: {
+        username,
+        locationId: ghlLocationId,
+        authorities: thrioAuthResult.authorities || []
+      }
+    });
+  } catch (error) {
+    logger.error('Error in getToken:', error);
+    next(error);
+  }
+};
+
 /**
  * Refresh authentication token
  * @param {Object} req - Express request object
@@ -846,6 +926,7 @@ module.exports = {
   initiateOAuth,
   handleOAuthCallback,
   verifyToken,
+  getToken,
   refreshToken,
   validateExternalAuth,
   authenticateWithThrio,

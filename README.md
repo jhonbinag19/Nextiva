@@ -83,43 +83,28 @@ The project includes a `vercel.json` configuration file that sets up the proper 
 
 ### Authentication
 
-#### Validate Credentials
+#### Get Token (Username/Password)
 
 ```
-POST /api/auth/validate
+POST /api/auth/token
 ```
 
 Request body:
 ```json
 {
   "username": "your_thrio_username",
-  "password": "your_thrio_password"
+  "password": "your_thrio_password",
+  "apiKey": "your_ghl_location_api_key_or_private_integration_token",
+  "locationId": "your_ghl_location_id"
 }
 ```
 
 #### Protected Endpoint Authentication Format
 
-All protected endpoints require these headers on each request:
+All protected endpoints use the JWT token returned by `/api/auth/token`:
 
 ```
-Authorization: Bearer live
-X-GHL-API-Key: <your_ghl_location_api_key_or_private_integration_token>
-X-GHL-Location-Id: <your_ghl_location_id>
-```
-
-And either:
-
-```
-X-THRIO-USERNAME: <your_thrio_username>
-X-THRIO-PASSWORD: <your_thrio_password>
-```
-
-Or Basic auth:
-
-```
-Authorization: Basic <base64(username:password)>
-X-GHL-API-Key: <your_ghl_location_api_key_or_private_integration_token>
-X-GHL-Location-Id: <your_ghl_location_id>
+Authorization: Bearer <jwt_token_from_/api/auth/token>
 ```
 
 #### Refresh Token
@@ -374,22 +359,27 @@ This API server is designed to work with GoHighLevel marketplace, workflows, and
 
 ### Authentication
 
-To authenticate with the API from GoHighLevel, include these headers on protected requests:
+1. Get a JWT token:
 
 ```
-Authorization: Bearer live
-X-GHL-API-Key: <your_ghl_location_api_key_or_private_integration_token>
-X-GHL-Location-Id: <your_ghl_location_id>
-X-THRIO-USERNAME: <your_thrio_username>
-X-THRIO-PASSWORD: <your_thrio_password>
+POST /api/auth/token
 ```
 
-If you prefer Basic auth for Thrio credentials, you can use:
+Body:
+
+```json
+{
+  "username": "your_thrio_username",
+  "password": "your_thrio_password",
+  "apiKey": "your_ghl_location_api_key_or_private_integration_token",
+  "locationId": "your_ghl_location_id"
+}
+```
+
+2. Use that token on every protected request:
 
 ```
-Authorization: Basic <base64(username:password)>
-X-GHL-API-Key: <your_ghl_location_api_key_or_private_integration_token>
-X-GHL-Location-Id: <your_ghl_location_id>
+Authorization: Bearer <jwt_token_from_/api/auth/token>
 ```
 
 ### Outbound List Endpoints
