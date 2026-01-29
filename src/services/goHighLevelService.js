@@ -825,12 +825,14 @@ const getThrioCredentials = async (locationId, apiKey) => {
       );
 
       const usernameValue =
+        byName.get('username') ||
         byName.get('nextiva_thrio_username') ||
         byName.get('thrio_username') ||
         byName.get('thrio username') ||
         byName.get('nextiva username') ||
         byName.get('nextiva_thrio_user');
       const passwordValue =
+        byName.get('password') ||
         byName.get('nextiva_thrio_password') ||
         byName.get('thrio_password') ||
         byName.get('thrio password') ||
@@ -913,6 +915,8 @@ const setThrioCredentials = async (locationId, apiKey, { username, password }) =
 
     await upsertLocationCustomValue({ apiKey, locationId, name: 'nextiva_thrio_username', value: username });
     await upsertLocationCustomValue({ apiKey, locationId, name: 'nextiva_thrio_password', value: password });
+    await upsertLocationCustomValue({ apiKey, locationId, name: 'username', value: username });
+    await upsertLocationCustomValue({ apiKey, locationId, name: 'password', value: password });
 
     return { success: true };
   } catch (error) {
