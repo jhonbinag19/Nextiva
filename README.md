@@ -8,6 +8,7 @@ This is a server implementation for Nextiva that provides secure authentication 
 ## Features
 
 - **Authentication**: Secure username/password authentication via Thrio login system
+- **JWT Token Management**: Secure API access using JWT tokens with refresh capability
 - **Lead Management**: Create, read, update, and delete leads
 - **List Management**: Create, read, update, and delete lists
 - **Two-way Synchronization**: Sync data between systems
@@ -83,36 +84,58 @@ The project includes a `vercel.json` configuration file that sets up the proper 
 
 ### Authentication
 
-#### Marketplace Install (One-Time)
-
-```
-POST /api/auth/validate
-```
-
-Request body (called by GoHighLevel during app install):
-```json
-{
-  "username": "your_thrio_username",
-  "password": "your_thrio_password",
-  "apiKey": "your_ghl_location_api_key_or_private_integration_token",
-  "locationId": "your_ghl_location_id"
-}
-```
-
-#### Protected Endpoint Authentication Format
-
-After installation, protected endpoints can authenticate using the GHL location context (the Thrio credentials are stored on the location):
-
-```
-X-GHL-API-Key: <your_ghl_location_api_key_or_private_integration_token>
-X-GHL-Location-Id: <your_ghl_location_id>
-```
-
-Optional: You can also generate a JWT and use it instead:
+#### Get Token
 
 ```
 POST /api/auth/token
-Authorization: Bearer <jwt_token_from_/api/auth/token>
+```
+
+Request body:
+```json
+{
+  "username": "your_username",
+  "password": "your_password"
+}
+```
+
+Response:
+```json
+{
+  "success": true,
+  "token": "jwt_token",
+  "refreshToken": "refresh_token",
+  "expiresIn": 86400,
+  "tokenType": "Bearer",
+  "user": {
+    "id": "user_id",
+    "username": "your_username",
+    "authorities": ["ROLE_USER"]
+  }
+}
+```
+
+#### Verify Token
+
+```
+GET /api/auth/verify
+```
+
+Headers:
+```
+Authorization: Bearer jwt_token
+```
+
+Response:
+```json
+{
+  "success": true,
+  "message": "Token is valid",
+  "user": {
+    "username": "your_username",
+    "userId": "user_id",
+    "authorities": ["ROLE_USER"]
+  }
+}
 ```
 
 #### Refresh Token
@@ -171,7 +194,10 @@ Request body:
   "lastName": "Doe",
   "email": "john.doe@example.com",
   "phone": "+1234567890",
-  "status": "new"
+  "status": "new",
+  "source": "website",
+  "customFields": {},
+  "syncToGhl": true
 }
 ```
 
@@ -361,62 +387,25 @@ Options for `direction`:
 - `from-ghl`: Sync from GoHighLevel to Nextiva
 - `both`: Sync in both directions (default)
 
+## Outbound List
+
+Add a lead to an outbound list:
+
+```
+POST /data/api/types/outboundlist/:outboundListId/leadsupsert
+```
+
 ## GoHighLevel Integration
 
 This API server is designed to work with GoHighLevel marketplace, workflows, and triggers. It provides two-way synchronization between Nextiva and GoHighLevel for leads and lists.
 
 ### Authentication
 
-1. During marketplace install, GoHighLevel validates and stores the credentials:
+To authenticate with the API from GoHighLevel, you need to:
 
-```
-POST /api/auth/validate
-```
-
-```json
-{
-  "username": "your_thrio_username",
-  "password": "your_thrio_password",
-  "apiKey": "your_ghl_location_api_key_or_private_integration_token",
-  "locationId": "your_ghl_location_id"
-}
-```
-
-2. Workflow actions can call protected endpoints using the location context:
-
-```
-X-GHL-API-Key: <your_ghl_location_api_key_or_private_integration_token>
-X-GHL-Location-Id: <your_ghl_location_id>
-```
-
-### Outbound List Endpoints
-
-Create a lead in an outbound list:
-
-```
-POST /data/api/types/outboundlist/:outboundListId/lead
-POST /data/api/types/outboundlist/64da53c8bd2e2743914906a1/lead
-POST /data/api/types/outboundlist/693c3a02a1e63d1632b8830b/lead
-POST /data/api/types/outboundlist/693c3a27fdf2523859bc31ea/lead
-POST /data/api/types/outboundlist/693c3a3f17aad25152e139b9/lead
-POST /data/api/types/outboundlist/693c3a5584c45a1b7bac8d96/lead
-POST /data/api/types/outboundlist/693c3a6d08e5134207591087/lead
-```
-
-Create a campaign outbound list:
-
-```
-POST /data/api/types/campaignoutboundlist
-```
-
-### Users SMS Endpoint
-
-Dynamic proxy endpoint:
-
-```
-ANY /api/users/api/sms
-ANY /api/users/api/sms/*
-```
+1. Store your GoHighLevel API key in GoHighLevel
+2. Use the API key to get a JWT token from the `/api/auth/token` endpoint
+3. Use the JWT token in the `Authorization` header for subsequent requests
 
 ### Workflows and Triggers
 

@@ -114,7 +114,7 @@
       "name": "Outbound List Lead",
       "item": [
         {
-          "name": "POST /data/api/types/outboundlist/:outboundListId/lead (dynamic)",
+          "name": "POST /data/api/types/outboundlist/:outboundListId/leadsupsert (dynamic)",
           "request": {
             "method": "POST",
             "header": [
@@ -128,14 +128,14 @@
               "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"phone\": \"+15555555555\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/data/api/types/outboundlist/{{outboundListId}}/lead",
+              "raw": "{{baseUrl}}/data/api/types/outboundlist/{{outboundListId}}/leadsupsert",
               "host": ["{{baseUrl}}"],
-              "path": ["data", "api", "types", "outboundlist", "{{outboundListId}}", "lead"]
+              "path": ["data", "api", "types", "outboundlist", "{{outboundListId}}", "leadsupsert"]
             }
           }
         },
         {
-          "name": "POST /data/api/types/outboundlist/64da53c8bd2e2743914906a1/lead",
+          "name": "POST /data/api/types/outboundlist/64da53c8bd2e2743914906a1/leadsupsert",
           "request": {
             "method": "POST",
             "header": [
@@ -149,9 +149,9 @@
               "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"phone\": \"+15555555555\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/data/api/types/outboundlist/64da53c8bd2e2743914906a1/lead",
+              "raw": "{{baseUrl}}/data/api/types/outboundlist/64da53c8bd2e2743914906a1/leadsupsert",
               "host": ["{{baseUrl}}"],
-              "path": ["data", "api", "types", "outboundlist", "64da53c8bd2e2743914906a1", "lead"]
+              "path": ["data", "api", "types", "outboundlist", "64da53c8bd2e2743914906a1", "leadsupsert"]
             }
           }
         }

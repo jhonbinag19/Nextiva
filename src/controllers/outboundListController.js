@@ -9,7 +9,7 @@ const postLeadToOutboundList = async (req, res, outboundListId) => {
     if (!token) {
       return res.status(401).json({ success: false, message: 'Missing Thrio access token' });
     }
-    const url = `${baseUrl}/data/api/types/outboundlist/${outboundListId}/lead`;
+    const url = `${baseUrl}/data/api/types/outboundlist/${outboundListId}/leadsupsert`;
     const response = await axios.post(url, req.body, {
       headers: {
         Authorization: `Bearer ${token}`,
