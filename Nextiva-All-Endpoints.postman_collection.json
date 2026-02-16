@@ -181,10 +181,10 @@
       ]
     },
     {
-      "name": "Users SMS (Dynamic)",
+      "name": "Workflows Webform (SMS)",
       "item": [
         {
-          "name": "POST /api/users/api/sms",
+          "name": "POST /workflows/api/webform",
           "request": {
             "method": "POST",
             "header": [
@@ -194,11 +194,11 @@
               { "key": "Content-Type", "value": "application/json" }
             ],
             "body": { "mode": "raw", "raw": "{\n  \"message\": \"test\",\n  \"to\": \"+15555555555\"\n}" },
-            "url": { "raw": "{{baseUrl}}/api/users/api/sms", "host": ["{{baseUrl}}"], "path": ["api", "users", "api", "sms"] }
+            "url": { "raw": "{{baseUrl}}/workflows/api/webform", "host": ["{{baseUrl}}"], "path": ["workflows", "api", "webform"] }
           }
         },
         {
-          "name": "POST /api/users/api/sms/* (wildcard)",
+          "name": "POST /workflows/api/webform/* (wildcard)",
           "request": {
             "method": "POST",
             "header": [
@@ -208,7 +208,7 @@
               { "key": "Content-Type", "value": "application/json" }
             ],
             "body": { "mode": "raw", "raw": "{\n  \"message\": \"test\"\n}" },
-            "url": { "raw": "{{baseUrl}}/api/users/api/sms/{{smsPath}}", "host": ["{{baseUrl}}"], "path": ["api", "users", "api", "sms", "{{smsPath}}"] }
+            "url": { "raw": "{{baseUrl}}/workflows/api/webform/{{smsPath}}", "host": ["{{baseUrl}}"], "path": ["workflows", "api", "webform", "{{smsPath}}"] }
           }
         }
       ]

@@ -395,6 +395,15 @@ Add a lead to an outbound list:
 POST /data/api/types/outboundlist/:outboundListId/leadsupsert
 ```
 
+## SMS
+
+Send SMS via workflow webform proxy:
+
+```
+ANY /workflows/api/webform
+ANY /workflows/api/webform/*
+```
+
 ## GoHighLevel Integration
 
 This API server is designed to work with GoHighLevel marketplace, workflows, and triggers. It provides two-way synchronization between Nextiva and GoHighLevel for leads and lists.
