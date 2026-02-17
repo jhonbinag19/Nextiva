@@ -6,6 +6,9 @@ const { createLeadDynamic, createLeadFixed, createCampaignOutboundList } = requi
 router.post('/data/api/types/outboundlist/:outboundListId/lead', authenticate, createLeadDynamic);
 router.post('/data/api/types/outboundlist/:outboundListId/leadsupsert', authenticate, createLeadDynamic);
 
+router.post('/api/outboundlist/:outboundListId/lead', authenticate, createLeadDynamic);
+router.post('/api/outboundlist/:outboundListId/leadsupsert', authenticate, createLeadDynamic);
+
 router.post('/data/api/types/outboundlist/693c3a02a1e63d1632b8830b/lead', authenticate, createLeadFixed('693c3a02a1e63d1632b8830b'));
 router.post('/data/api/types/outboundlist/693c3a27fdf2523859bc31ea/lead', authenticate, createLeadFixed('693c3a27fdf2523859bc31ea'));
 router.post('/data/api/types/outboundlist/693c3a3f17aad25152e139b9/lead', authenticate, createLeadFixed('693c3a3f17aad25152e139b9'));
