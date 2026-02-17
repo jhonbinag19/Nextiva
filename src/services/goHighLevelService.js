@@ -1340,18 +1340,62 @@ const goHighLevelService = {
 const getThrioCredentials = async (locationId, apiKey) => {
   try {
     const client = createApiClient(apiKey);
+    let username = null;
+    let password = null;
+
+    try {
+      const customValuesResponse = await client.get(`/locations/${locationId}/customValues`);
+      const customValues = customValuesResponse.data?.customValues || customValuesResponse.data || [];
+      const valuesArray = Array.isArray(customValues) ? customValues : [];
+
+      const byName = new Map(
+        valuesArray
+          .filter(v => v && typeof v === 'object')
+          .map(v => [String(v.name || '').toLowerCase(), v])
+      );
+
+      const usernameValue =
+        byName.get('username') ||
+        byName.get('nextiva_thrio_username') ||
+        byName.get('thrio_username') ||
+        byName.get('thrio username') ||
+        byName.get('nextiva username') ||
+        byName.get('nextiva_thrio_user');
+      const passwordValue =
+        byName.get('password') ||
+        byName.get('nextiva_thrio_password') ||
+        byName.get('thrio_password') ||
+        byName.get('thrio password') ||
+        byName.get('nextiva password') ||
+        byName.get('nextiva_thrio_pass');
+
+      username = usernameValue?.value || null;
+      password = passwordValue?.value || null;
+    } catch (error) {
+      logger.warn('Failed to read location customValues', { locationId, message: error.message });
+    }
+
+    if (username && password) {
+      return {
+        success: true,
+        credentials: { username, password, locationId }
+      };
+    }
+
     const response = await client.get(`/locations/${locationId}`);
 
     const locationData = response.data?.location || response.data || {};
     const customFields = locationData.customFields || {};
 
-    const username =
+    username =
+      username ||
       customFields.nextiva_thrio_username ||
       customFields.thrio_username ||
       customFields.nextivaUsername ||
       customFields.thrioUsername;
 
-    const password =
+    password =
+      password ||
       customFields.nextiva_thrio_password ||
       customFields.thrio_password ||
       customFields.nextivaPassword ||
@@ -1374,7 +1418,45 @@ const getThrioCredentials = async (locationId, apiKey) => {
   }
 };
 
+const upsertLocationCustomValue = async ({ apiKey, locationId, name, value }) => {
+  const client = createApiClient(apiKey);
+  const listResponse = await client.get(`/locations/${locationId}/customValues`);
+  const customValues = listResponse.data?.customValues || listResponse.data || [];
+  const valuesArray = Array.isArray(customValues) ? customValues : [];
+
+  const existing = valuesArray.find(v => String(v?.name || '').toLowerCase() === String(name).toLowerCase());
+  if (existing?.id) {
+    const updateResponse = await client.put(`/locations/${locationId}/customValues/${existing.id}`, { name, value });
+    return updateResponse.data;
+  }
+
+  const createResponse = await client.post(`/locations/${locationId}/customValues`, { name, value });
+  return createResponse.data;
+};
+
+const setThrioCredentials = async (locationId, apiKey, { username, password }) => {
+  try {
+    if (!locationId || !apiKey) {
+      return { success: false, message: 'locationId and apiKey are required' };
+    }
+    if (!username || !password) {
+      return { success: false, message: 'username and password are required' };
+    }
+
+    await upsertLocationCustomValue({ apiKey, locationId, name: 'nextiva_thrio_username', value: username });
+    await upsertLocationCustomValue({ apiKey, locationId, name: 'nextiva_thrio_password', value: password });
+    await upsertLocationCustomValue({ apiKey, locationId, name: 'username', value: username });
+    await upsertLocationCustomValue({ apiKey, locationId, name: 'password', value: password });
+
+    return { success: true };
+  } catch (error) {
+    logger.error('Failed to store Thrio credentials in location customValues', { locationId, message: error.message });
+    return handleApiError(error);
+  }
+};
+
 module.exports = {
   goHighLevelService,
-  getThrioCredentials
+  getThrioCredentials,
+  setThrioCredentials
 };

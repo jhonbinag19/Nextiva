@@ -1,5 +1,23 @@
 const winston = require('winston');
 
+const safeStringify = (value) => {
+  const seen = new WeakSet();
+  return JSON.stringify(
+    value,
+    (key, val) => {
+      if (val instanceof Error) {
+        return { message: val.message, stack: val.stack };
+      }
+      if (typeof val === 'object' && val !== null) {
+        if (seen.has(val)) return '[Circular]';
+        seen.add(val);
+      }
+      return val;
+    },
+    2
+  );
+};
+
 // Define log format
 const logFormat = winston.format.combine(
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
@@ -20,7 +38,7 @@ const logger = winston.createLogger({
         winston.format.colorize(),
         winston.format.printf(
           ({ level, message, timestamp, ...meta }) => {
-            return `${timestamp} ${level}: ${message} ${Object.keys(meta).length ? JSON.stringify(meta, null, 2) : ''}`;
+            return `${timestamp} ${level}: ${message} ${Object.keys(meta).length ? safeStringify(meta) : ''}`;
           }
         )
       )

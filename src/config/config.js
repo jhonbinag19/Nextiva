@@ -24,6 +24,7 @@ const config = {
     },
     thrio: {
       baseUrl: process.env.THRIO_API_BASE_URL || 'https://nextiva.thrio.io',
+      authBaseUrl: process.env.THRIO_AUTH_BASE_URL || 'https://login.thrio.com',
       tokenEndpoint: process.env.THRIO_TOKEN_ENDPOINT || '/provider/token-with-authorities',
       timeout: parseInt(process.env.API_TIMEOUT) || 30000
     },
