@@ -7,8 +7,17 @@ const { authenticateWithThrio } = require('../controllers/authController');
 const authenticate = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization || null;
-    const locationId = req.headers['x-ghl-location-id'] || req.headers['x-location-id'] || null;
-    let ghlApiKey = req.headers['x-ghl-api-key'] || null;
+    const locationId =
+      req.headers['x-ghl-location-id'] ||
+      req.headers['x-location-id'] ||
+      (req.query ? (req.query.locationId || req.query.ghlLocationId) : null) ||
+      (req.body ? (req.body.locationId || req.body.ghlLocationId) : null) ||
+      null;
+    let ghlApiKey =
+      req.headers['x-ghl-api-key'] ||
+      (req.query ? (req.query.ghlApiKey || req.query.apiKey) : null) ||
+      (req.body ? (req.body.ghlApiKey || req.body.apiKey) : null) ||
+      null;
 
     let username = null;
     let password = null;
@@ -75,7 +84,10 @@ const authenticate = async (req, res, next) => {
       username = stored.credentials.username;
       password = stored.credentials.password;
     } else {
-      return res.status(401).json({ success: false, message: 'Authorization is required' });
+      return res.status(401).json({
+        success: false,
+        message: 'Authorization is required. Provide Authorization: Bearer <GHL_API_KEY> (or X-GHL-API-Key) and X-GHL-Location-Id.'
+      });
     }
 
     if (!username || !password) {
