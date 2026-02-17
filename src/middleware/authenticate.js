@@ -8,7 +8,7 @@ const authenticate = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization || null;
     const locationId = req.headers['x-ghl-location-id'] || req.headers['x-location-id'] || null;
-    const ghlApiKey = req.headers['x-ghl-api-key'] || null;
+    let ghlApiKey = req.headers['x-ghl-api-key'] || null;
 
     let username = null;
     let password = null;
@@ -52,6 +52,8 @@ const authenticate = async (req, res, next) => {
       } else if (scheme === 'Bearer' && tokenOrCreds && headerUsername && headerPassword) {
       username = headerUsername;
       password = headerPassword;
+      } else if (scheme === 'Bearer' && tokenOrCreds && locationId && !ghlApiKey) {
+      ghlApiKey = tokenOrCreds;
       } else if (scheme === 'Bearer' && tokenOrCreds && ghlApiKey && locationId) {
       const stored = await getThrioCredentials(locationId, ghlApiKey);
       if (!stored.success) {
@@ -62,7 +64,7 @@ const authenticate = async (req, res, next) => {
       } else {
       return res.status(401).json({
         success: false,
-        message: 'Invalid authorization format. Use Bearer <jwt>, or provide X-GHL-API-Key and X-GHL-Location-Id, or use Basic <base64(username:password)>'
+        message: 'Invalid authorization format. Provide X-GHL-API-Key and X-GHL-Location-Id, or use Basic <base64(username:password)>, or use Bearer <token> plus X-GHL-Location-Id.'
       });
     }
     } else if (ghlApiKey && locationId) {
