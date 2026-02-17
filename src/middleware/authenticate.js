@@ -23,6 +23,9 @@ const authenticate = async (req, res, next) => {
     let password = null;
     const headerUsername = req.headers['x-thrio-username'] || req.headers['x-nextiva-username'] || null;
     const headerPassword = req.headers['x-thrio-password'] || req.headers['x-nextiva-password'] || null;
+    const bodyUsername = req.body ? (req.body.username || req.body.thrioUsername) : null;
+    const bodyPassword = req.body ? (req.body.password || req.body.thrioPassword) : null;
+    let usingDirectThrioCredentials = false;
 
     if (authHeader) {
       const [scheme, tokenOrCreds] = authHeader.split(' ');
@@ -58,9 +61,11 @@ const authenticate = async (req, res, next) => {
       }
       username = decodedCreds.substring(0, sepIndex);
       password = decodedCreds.substring(sepIndex + 1);
+      usingDirectThrioCredentials = true;
       } else if (scheme === 'Bearer' && tokenOrCreds && headerUsername && headerPassword) {
       username = headerUsername;
       password = headerPassword;
+      usingDirectThrioCredentials = true;
       } else if (scheme === 'Bearer' && tokenOrCreds && locationId && !ghlApiKey) {
       ghlApiKey = tokenOrCreds;
       } else if (scheme === 'Bearer' && tokenOrCreds && ghlApiKey && locationId) {
@@ -83,18 +88,26 @@ const authenticate = async (req, res, next) => {
       }
       username = stored.credentials.username;
       password = stored.credentials.password;
+    } else if (headerUsername && headerPassword) {
+      username = headerUsername;
+      password = headerPassword;
+      usingDirectThrioCredentials = true;
+    } else if (bodyUsername && bodyPassword) {
+      username = bodyUsername;
+      password = bodyPassword;
+      usingDirectThrioCredentials = true;
     } else {
       return res.status(401).json({
         success: false,
-        message: 'Authorization is required. Provide Authorization: Bearer <GHL_API_KEY> (or X-GHL-API-Key) and X-GHL-Location-Id.'
+        message: 'Authorization is required. Provide Thrio credentials (Basic auth or username/password), or provide GoHighLevel context (Authorization Bearer or X-GHL-API-Key plus X-GHL-Location-Id).'
       });
     }
 
     if (!username || !password) {
       return res.status(401).json({ success: false, message: 'Username and password are required' });
     }
-    if (!locationId || !ghlApiKey) {
-      return res.status(401).json({ success: false, message: 'X-GHL-API-Key and X-GHL-Location-Id headers are required' });
+    if (!usingDirectThrioCredentials && (!locationId || !ghlApiKey)) {
+      return res.status(401).json({ success: false, message: 'X-GHL-API-Key and X-GHL-Location-Id are required when Thrio credentials are not provided' });
     }
 
     const authResult = await authenticateWithThrio(username, password);
@@ -106,10 +119,10 @@ const authenticate = async (req, res, next) => {
       username,
       thrioAccessToken: authResult.accessToken,
       thrioBaseUrl: config.api.thrio.baseUrl,
-      locationId,
-      apiKey: ghlApiKey,
-      ghlAccessToken: ghlApiKey,
-      ghlLocationId: locationId
+      locationId: locationId || null,
+      apiKey: ghlApiKey || null,
+      ghlAccessToken: ghlApiKey || null,
+      ghlLocationId: locationId || null
     };
 
     next();
