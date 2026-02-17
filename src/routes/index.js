@@ -7,6 +7,8 @@ const leadRoutes = require('./leadRoutes');
 const listRoutes = require('./listRoutes');
 const usersApiRoutes = require('./usersApiRoutes');
 const thrioProxyRoutes = require('./thrioProxy');
+const outboundListRoutes = require('./outboundListRoutes');
+const workflowsRoutes = require('./workflowsRoutes');
 
 // Health check endpoint
 router.get('/health', (req, res) => {
@@ -19,5 +21,7 @@ router.use('/leads', leadRoutes);
 router.use('/lists', listRoutes);
 router.use('/', usersApiRoutes);
 router.use('/thrio-proxy', thrioProxyRoutes);
+router.use('/', outboundListRoutes);
+router.use('/', workflowsRoutes);
 
 module.exports = router;
