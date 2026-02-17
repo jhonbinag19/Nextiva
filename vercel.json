@@ -6,7 +6,7 @@
       "use": "@vercel/node"
     },
     {
-      "src": "api/**/*.js",
+      "src": "api/outboundlist-leadsupsert.js",
       "use": "@vercel/node"
     }
   ],
