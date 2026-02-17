@@ -9,11 +9,13 @@
   "routes": [
     {
       "src": "/api/thrio-proxy/(.*)",
-      "dest": "src/index.js"
+      "dest": "src/index.js",
+      "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]
     },
     {
       "src": "/(.*)",
-      "dest": "src/index.js"
+      "dest": "src/index.js",
+      "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]
     }
   ],
   "env": {
