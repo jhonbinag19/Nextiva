@@ -131,6 +131,18 @@ router.post('/post/*', authenticate, async (req, res) => {
     const data = req.body;
     
     logger.debug('Proxying POST request to Thrio:', endpoint);
+    if (req.user?.isDemoToken) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          demo: true,
+          endpoint,
+          payload: data,
+          note: 'Demo Thrio proxy POST: request not sent to Thrio'
+        }
+      });
+    }
+
     const baseUrl = req.user?.thrioBaseUrl || config.api.thrio.baseUrl;
     const token = req.user?.thrioAccessToken;
     if (!token) {
@@ -173,6 +185,18 @@ router.put('/put/*', authenticate, async (req, res) => {
     const data = req.body;
     
     logger.debug('Proxying PUT request to Thrio:', endpoint);
+    if (req.user?.isDemoToken) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          demo: true,
+          endpoint,
+          payload: data,
+          note: 'Demo Thrio proxy PUT: request not sent to Thrio'
+        }
+      });
+    }
+
     const baseUrl = req.user?.thrioBaseUrl || config.api.thrio.baseUrl;
     const token = req.user?.thrioAccessToken;
     if (!token) {
@@ -214,6 +238,17 @@ router.delete('/delete/*', authenticate, async (req, res) => {
     const endpoint = req.params[0];
     
     logger.debug('Proxying DELETE request to Thrio:', endpoint);
+    if (req.user?.isDemoToken) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          demo: true,
+          endpoint,
+          note: 'Demo Thrio proxy DELETE: request not sent to Thrio'
+        }
+      });
+    }
+
     const baseUrl = req.user?.thrioBaseUrl || config.api.thrio.baseUrl;
     const token = req.user?.thrioAccessToken;
     if (!token) {

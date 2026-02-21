@@ -75,6 +75,18 @@ module.exports = async (req, res) => {
     return json(res, 401, { success: false, message: 'Invalid Thrio credentials', details: authResult ? authResult.message : 'Authentication failed' });
   }
 
+  if (authResult.demo) {
+    return json(res, 200, {
+      success: true,
+      data: {
+        demo: true,
+        outboundListId,
+        lead: leadPayload,
+        note: 'Demo Thrio outboundlist leadsupsert: request not sent to Thrio'
+      }
+    });
+  }
+
   const baseUrl = config.api.thrio.baseUrl;
   const url = `${baseUrl}/data/api/types/outboundlist/${outboundListId}/leadsupsert`;
 

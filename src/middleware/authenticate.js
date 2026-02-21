@@ -122,7 +122,8 @@ const authenticate = async (req, res, next) => {
       locationId: locationId || null,
       apiKey: ghlApiKey || null,
       ghlAccessToken: ghlApiKey || null,
-      ghlLocationId: locationId || null
+      ghlLocationId: locationId || null,
+      isDemoToken: !!authResult.demo
     };
 
     next();
