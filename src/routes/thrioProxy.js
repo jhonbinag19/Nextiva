@@ -1,7 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const { thrioProxy } = require('../middleware/thrioProxy');
-const { logger } = require('../utils/logger');
+const logger = require('../utils/logger');
 const { authenticate } = require('../middleware/authenticate');
 const config = require('../config/config');
 
@@ -150,7 +150,11 @@ router.post('/post/*', authenticate, async (req, res) => {
     res.status(response.status || 200).json({ success: true, data: response.data });
     
   } catch (error) {
-    logger.error('Thrio POST proxy failed:', error.message);
+    if (logger && logger.error) {
+      logger.error('Thrio POST proxy failed:', error.message);
+    } else {
+      console.error('Thrio POST proxy failed:', error.message);
+    }
     res.status(error.response?.status || 500).json({
       success: false,
       error: 'Thrio API request failed',
@@ -188,7 +192,11 @@ router.put('/put/*', authenticate, async (req, res) => {
     res.status(response.status || 200).json({ success: true, data: response.data });
     
   } catch (error) {
-    logger.error('Thrio PUT proxy failed:', error.message);
+    if (logger && logger.error) {
+      logger.error('Thrio PUT proxy failed:', error.message);
+    } else {
+      console.error('Thrio PUT proxy failed:', error.message);
+    }
     res.status(error.response?.status || 500).json({
       success: false,
       error: 'Thrio API request failed',
@@ -224,7 +232,11 @@ router.delete('/delete/*', authenticate, async (req, res) => {
     res.status(response.status || 200).json({ success: true, data: response.data });
     
   } catch (error) {
-    logger.error('Thrio DELETE proxy failed:', error.message);
+    if (logger && logger.error) {
+      logger.error('Thrio DELETE proxy failed:', error.message);
+    } else {
+      console.error('Thrio DELETE proxy failed:', error.message);
+    }
     res.status(error.response?.status || 500).json({
       success: false,
       error: 'Thrio API request failed',
