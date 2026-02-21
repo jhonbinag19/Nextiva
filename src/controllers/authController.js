@@ -852,35 +852,33 @@ const authenticateWithThrioRealAPI = async (username, password) => {
  */
 const authenticateWithThrio = async (username, password) => {
   try {
-    // Enhanced demo mode for development/testing
-    // This mode works with any credentials when in development
-    if (process.env.NODE_ENV === 'development') {
-      // Demo mode for specific test credentials
-      if ((username === 'nextiva+wisechoiceremodeling@wisechoiceremodel.com' && 
-           password === 'GHLwiseChoiceAPI2025!!') ||
-          (username === 'demo@thrio.com' || username === 'test@thrio.com') && 
-           password === 'demo123') {
-        if (logger && logger.info) {
-          logger.info('Using demo mode for Thrio authentication');
-        } else {
-          console.log('Using demo mode for Thrio authentication');
-        }
-        
-        return {
-          success: true,
-          accessToken: 'demo-access-token-' + Date.now(),
-          refreshToken: 'demo-refresh-token-' + Date.now(),
-          tokenType: 'Bearer',
-          expiresIn: 3600,
-          authorities: ['ROLE_USER', 'ROLE_ADMIN'],
-          scope: 'read write',
-          demo: true,
-          source: 'demo_mode'
-        };
+    const isDemoCredentials =
+      (username === 'nextiva+wisechoiceremodeling@wisechoiceremodel.com' &&
+       password === 'GHLwiseChoiceAPI2025!!') ||
+      ((username === 'demo@thrio.com' || username === 'test@thrio.com') &&
+       password === 'demo123');
+
+    if (isDemoCredentials) {
+      if (logger && logger.info) {
+        logger.info('Using demo mode for Thrio authentication');
+      } else {
+        console.log('Using demo mode for Thrio authentication');
       }
       
-      // Fallback demo mode for any credentials in development
-      // This allows testing with dynamic credentials fetched from GoHighLevel
+      return {
+        success: true,
+        accessToken: 'demo-access-token-' + Date.now(),
+        refreshToken: 'demo-refresh-token-' + Date.now(),
+        tokenType: 'Bearer',
+        expiresIn: 3600,
+        authorities: ['ROLE_USER', 'ROLE_ADMIN'],
+        scope: 'read write',
+        demo: true,
+        source: 'demo_mode'
+      };
+    }
+
+    if (process.env.NODE_ENV === 'development') {
       if (logger && logger.info) {
         logger.info('Using fallback demo mode for Thrio authentication with username:', username);
       }
@@ -897,8 +895,7 @@ const authenticateWithThrio = async (username, password) => {
         source: 'fallback_demo_mode'
       };
     }
-    
-    // If not in development demo mode, try real API
+
     return await authenticateWithThrioRealAPI(username, password);
     
   } catch (error) {
