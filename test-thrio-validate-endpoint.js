@@ -11,7 +11,7 @@ async function testThrioValidateEndpoint() {
   const credentials = {
     username: 'nextiva+wisechoiceremodeling@wisechoiceremodel.com',
     password: 'GHLwiseChoiceAPI2025!!',
-    locationId: 'wise-choice-remodeling-location'
+    locationId: 'ugClqaulGidjXIGkWfyA'
   };
   
   console.log('📍 Endpoint:', endpoint);

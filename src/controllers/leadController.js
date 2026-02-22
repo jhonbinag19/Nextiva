@@ -1,5 +1,5 @@
 const { goHighLevelService } = require('../services/goHighLevelService');
-const { logger } = require('../utils/logger');
+const logger = require('../utils/logger');
 
 /**
  * Get all leads
