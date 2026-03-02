@@ -8,11 +8,12 @@ const credentialStore = require('../services/credentialStore');
 const authenticate = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization || null;
+    const bodyObj = Array.isArray(req.body) ? req.body[0] : req.body;
     const locationId =
       req.headers['x-ghl-location-id'] ||
       req.headers['x-location-id'] ||
       (req.query ? (req.query.locationId || req.query.ghlLocationId) : null) ||
-      (req.body ? (req.body.locationId || req.body.ghlLocationId) : null) ||
+      (bodyObj ? (bodyObj.locationId || bodyObj.ghlLocationId) : null) ||
       null;
     let ghlApiKey =
       req.headers['x-ghl-api-key'] ||
