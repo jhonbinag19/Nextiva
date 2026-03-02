@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const axios = require('axios');
 const logger = require('../utils/logger');
 const config = require('../config/config');
-const { goHighLevelService, getThrioCredentials, setThrioCredentials } = require('../services/goHighLevelService');
+const { goHighLevelService, getThrioCredentials, setThrioCredentials, upsertLocationCustomValue } = require('../services/goHighLevelService');
 
 /**
  * Initiate GoHighLevel OAuth flow
@@ -106,6 +106,19 @@ const handleOAuthCallback = async (req, res, next) => {
         success: false,
         message: 'Invalid access token received'
       });
+    }
+
+    // Store the GHL access token as a custom value in the sub-location
+    // so workflow actions can reference it via {{custom_values.ghl_access_token}}
+    const locationId = validationResult.locationId;
+    try {
+      await upsertLocationCustomValue({ apiKey: access_token, locationId, name: 'ghl_access_token', value: access_token });
+      if (refresh_token) {
+        await upsertLocationCustomValue({ apiKey: access_token, locationId, name: 'ghl_refresh_token', value: refresh_token });
+      }
+      logger.info('Stored GHL access token as custom value for location:', locationId);
+    } catch (storeErr) {
+      logger.warn('Failed to store GHL access token as custom value:', storeErr.message);
     }
     
     // Generate JWT token for our API

@@ -1458,5 +1458,6 @@ const setThrioCredentials = async (locationId, apiKey, { username, password }) =
 module.exports = {
   goHighLevelService,
   getThrioCredentials,
-  setThrioCredentials
+  setThrioCredentials,
+  upsertLocationCustomValue
 };
