@@ -18,12 +18,12 @@ const leadsUpsert = async (req, res, outboundListId) => {
       return res.status(200).json({ success: false, message: 'Missing Thrio access token', debug: { user: req.user ? 'present' : 'missing' } });
     }
 
-    // Strip auth-only fields before forwarding to Thrio
+    // Strip auth-only fields and ensure payload is an array (Thrio requires it)
     if (Array.isArray(payload)) {
       payload = payload.map(({ locationId, ghlLocationId, ...lead }) => lead);
     } else if (payload && typeof payload === 'object') {
       const { locationId, ghlLocationId, ...rest } = payload;
-      payload = rest;
+      payload = [rest];
     }
 
     const client = createThrioClient(token, req.user?.thrioClientLocation, req.user?.thrioBaseUrl);
