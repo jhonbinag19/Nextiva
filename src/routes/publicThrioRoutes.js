@@ -39,17 +39,17 @@ const leadsUpsert = async (req, res, outboundListId) => {
       status: error.response?.status,
       thrioError: error.response?.data,
       outboundListId,
-      hasClientLocation: !!req.user?.thrioClientLocation
+      payloadSent: JSON.stringify(payload).substring(0, 500)
     });
     return res.status(error.response?.status || 500).json({
       success: false,
       message: error.response?.data?.message || error.message || 'Failed to upsert lead',
-      thrioError: error.response?.data,
+      thrioError: error.response?.data || null,
       debug: {
         outboundListId,
         thrioUrl: `${req.user?.thrioBaseUrl || 'https://nextiva.thrio.io'}/data/api/types/outboundlist/${outboundListId}/leadsupsert`,
-        hasClientLocation: !!req.user?.thrioClientLocation,
-        clientLocation: req.user?.thrioClientLocation || null
+        thrioStatus: error.response?.status || null,
+        payloadSent: payload
       }
     });
   }
