@@ -4,16 +4,9 @@
     {
       "src": "src/index.js",
       "use": "@vercel/node"
-    },
-    {
-      "src": "api/outboundlist-leadsupsert.js",
-      "use": "@vercel/node"
     }
   ],
   "routes": [
-    {
-      "handle": "filesystem"
-    },
     {
       "src": "/api/(.*)",
       "dest": "src/index.js",
