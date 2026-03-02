@@ -11,10 +11,23 @@ const postLeadToOutboundList = async (req, res, outboundListId) => {
     const response = await client.post(`/data/api/types/outboundlist/${outboundListId}/leadsupsert`, req.body);
     res.status(response.status || 200).json({ success: true, data: response.data });
   } catch (error) {
-    logger.error('Outbound list lead creation failed', { message: error.message, status: error.response?.status });
+    logger.error('Outbound list lead creation failed', {
+      message: error.message,
+      status: error.response?.status,
+      thrioError: error.response?.data,
+      outboundListId,
+      hasClientLocation: !!req.user?.thrioClientLocation
+    });
     res.status(error.response?.status || 500).json({
       success: false,
-      message: error.response?.data?.message || error.message || 'Failed to create lead'
+      message: error.response?.data?.message || error.message || 'Failed to create lead',
+      thrioError: error.response?.data,
+      debug: {
+        outboundListId,
+        thrioUrl: `${req.user?.thrioBaseUrl || 'https://nextiva.thrio.io'}/data/api/types/outboundlist/${outboundListId}/leadsupsert`,
+        hasClientLocation: !!req.user?.thrioClientLocation,
+        clientLocation: req.user?.thrioClientLocation || null
+      }
     });
   }
 };
