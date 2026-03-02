@@ -496,44 +496,69 @@ const authenticateWithThrio = async (username, password) => {
 };
 
 /**
- * Diagnostic endpoint — returns the raw Thrio auth response for debugging
- * Requires authenticate middleware (GHL sub-location or Basic Auth)
+ * Diagnostic endpoint — shows full auth context and optionally tests a Thrio call
+ * Requires authenticate middleware (GHL sub-location, Basic Auth, or JWT)
+ *
+ * Query params:
+ *   outboundListId  — if provided, makes a live POST to Thrio leadsupsert with {}
+ *                     so you can see the exact Thrio 403/error body
  */
 const thrioAuthTest = async (req, res) => {
   try {
-    const username = req.user?.username;
-    const password = req.headers['x-thrio-password'] || req.headers['x-nextiva-password'] || req.body?.password || null;
+    const token = req.user?.thrioAccessToken;
 
-    if (!username) {
-      return res.status(400).json({ success: false, message: 'No authenticated user found — ensure authenticate middleware ran' });
+    if (!token) {
+      return res.status(401).json({ success: false, message: 'No Thrio access token — authentication did not complete' });
     }
 
-    const { baseUrl, tokenEndpoint } = config.api.thrio;
-    const tokenUrl = `${baseUrl}${tokenEndpoint}`;
-    const auth = Buffer.from(`${username}:${password || ''}`).toString('base64');
+    const authContext = {
+      username: req.user?.username || null,
+      locationId: req.user?.locationId || null,
+      ghlLocationId: req.user?.ghlLocationId || null,
+      thrioBaseUrl: req.user?.thrioBaseUrl || config.api.thrio.baseUrl,
+      thrioClientLocation: req.user?.thrioClientLocation || null,
+      thrioLocation: req.user?.thrioLocation || null,
+      thrioAccessToken: token.substring(0, 30) + '...',
+      authorities: req.user?.authorities || []
+    };
 
-    const response = await axios.get(tokenUrl, {
-      headers: { 'Authorization': `Basic ${auth}`, 'Accept': 'application/json' },
-      timeout: config.api.thrio.timeout
-    });
+    // Optional: test the actual leadsupsert call to surface Thrio's exact error
+    const testOutboundListId = req.query.outboundListId || req.body?.outboundListId || null;
+    let thrioTestResult = null;
+
+    if (testOutboundListId) {
+      const { createThrioClient } = require('../services/thrioService');
+      const client = createThrioClient(token, req.user?.thrioClientLocation, req.user?.thrioBaseUrl);
+      try {
+        const response = await client.post(
+          `/data/api/types/outboundlist/${testOutboundListId}/leadsupsert`,
+          req.body?.testPayload || {}
+        );
+        thrioTestResult = { status: response.status, data: response.data, success: true };
+      } catch (thrioErr) {
+        thrioTestResult = {
+          success: false,
+          status: thrioErr.response?.status,
+          thrioError: thrioErr.response?.data,
+          message: thrioErr.message,
+          url: `${authContext.thrioBaseUrl}/data/api/types/outboundlist/${testOutboundListId}/leadsupsert`,
+          headersSent: {
+            Authorization: `Bearer ${token.substring(0, 20)}...`,
+            'X-Client-Location': req.user?.thrioClientLocation || '(not set)'
+          }
+        };
+      }
+    }
 
     return res.status(200).json({
       success: true,
-      tokenUrl,
-      thrioResponse: response.data,
-      reqUser: {
-        username: req.user?.username,
-        locationId: req.user?.locationId,
-        thrioClientLocation: req.user?.thrioClientLocation,
-        thrioLocation: req.user?.thrioLocation,
-        thrioAccessToken: req.user?.thrioAccessToken ? req.user.thrioAccessToken.substring(0, 20) + '...' : null
-      }
+      authContext,
+      thrioTest: thrioTestResult
     });
   } catch (error) {
-    return res.status(error?.response?.status || 500).json({
+    return res.status(500).json({
       success: false,
-      message: error?.response?.data || error.message,
-      status: error?.response?.status
+      message: error.message
     });
   }
 };
