@@ -81,6 +81,7 @@ const authenticate = async (req, res, next) => {
       username: stored.credentials.username,
       thrioAccessToken: authResult.accessToken,
       thrioBaseUrl: authResult.location || authResult.clientLocation || config.api.thrio.baseUrl,
+      // Note: location = data API domain per Thrio docs
       thrioClientLocation: authResult.clientLocation || null,
       thrioLocation: authResult.location || null,
       locationId,
