@@ -53,6 +53,16 @@ const authenticate = async (req, res, next) => {
 
     // ── Path 2 (fallback): Location ID (+ optional GHL API key) ──
     // Fetch stored Thrio credentials from Redis (primary) or GHL (fallback).
+    logger.info('Auth middleware debug:', {
+      locationId,
+      hasAuthHeader: !!authHeader,
+      headerLocationId: req.headers['x-ghl-location-id'] || req.headers['x-location-id'] || null,
+      queryLocationId: req.query?.locationId || req.query?.ghlLocationId || null,
+      bodyIsArray: Array.isArray(req.body),
+      bodyLocationId: req.body?.locationId || null,
+      url: req.originalUrl
+    });
+
     if (!locationId) {
       return res.status(401).json({
         success: false,
@@ -68,7 +78,8 @@ const authenticate = async (req, res, next) => {
       return res.status(401).json({
         success: false,
         message: 'Thrio credentials not found for this location. Use POST /api/auth/validate to store credentials first.',
-        details: stored?.message
+        details: stored?.message,
+        debug: { receivedLocationId: locationId }
       });
     }
 
