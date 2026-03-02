@@ -220,6 +220,8 @@ const getToken = async (req, res, next) => {
       ghlAccessToken: ghlApiKey,
       thrioAccessToken: thrioAuthResult.accessToken,
       thrioBaseUrl: config.api.thrio.baseUrl,
+      thrioClientLocation: thrioAuthResult.clientLocation || null,
+      thrioLocation: thrioAuthResult.location || null,
       authorities: thrioAuthResult.authorities || []
     };
 
@@ -493,6 +495,49 @@ const authenticateWithThrio = async (username, password) => {
   return await authenticateWithThrioRealAPI(username, password);
 };
 
+/**
+ * Diagnostic endpoint — returns the raw Thrio auth response for debugging
+ * Requires authenticate middleware (GHL sub-location or Basic Auth)
+ */
+const thrioAuthTest = async (req, res) => {
+  try {
+    const username = req.user?.username;
+    const password = req.headers['x-thrio-password'] || req.headers['x-nextiva-password'] || req.body?.password || null;
+
+    if (!username) {
+      return res.status(400).json({ success: false, message: 'No authenticated user found — ensure authenticate middleware ran' });
+    }
+
+    const { baseUrl, tokenEndpoint } = config.api.thrio;
+    const tokenUrl = `${baseUrl}${tokenEndpoint}`;
+    const auth = Buffer.from(`${username}:${password || ''}`).toString('base64');
+
+    const response = await axios.get(tokenUrl, {
+      headers: { 'Authorization': `Basic ${auth}`, 'Accept': 'application/json' },
+      timeout: config.api.thrio.timeout
+    });
+
+    return res.status(200).json({
+      success: true,
+      tokenUrl,
+      thrioResponse: response.data,
+      reqUser: {
+        username: req.user?.username,
+        locationId: req.user?.locationId,
+        thrioClientLocation: req.user?.thrioClientLocation,
+        thrioLocation: req.user?.thrioLocation,
+        thrioAccessToken: req.user?.thrioAccessToken ? req.user.thrioAccessToken.substring(0, 20) + '...' : null
+      }
+    });
+  } catch (error) {
+    return res.status(error?.response?.status || 500).json({
+      success: false,
+      message: error?.response?.data || error.message,
+      status: error?.response?.status
+    });
+  }
+};
+
 module.exports = {
   initiateOAuth,
   handleOAuthCallback,
@@ -500,6 +545,7 @@ module.exports = {
   getToken,
   refreshToken,
   validateExternalAuth,
+  thrioAuthTest,
   authenticateWithThrio,
   authenticateWithThrioRealAPI
 };

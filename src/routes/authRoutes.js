@@ -40,4 +40,11 @@ router.post('/refresh', authController.refreshToken);
  */
 router.post('/validate', authController.validateExternalAuth);
 
+/**
+ * @route GET /api/auth/thrio-test
+ * @desc Diagnostic — returns raw Thrio auth response and req.user context
+ * @access Private
+ */
+router.get('/thrio-test', authenticate, authController.thrioAuthTest);
+
 module.exports = router;

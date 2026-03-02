@@ -119,6 +119,8 @@ const authenticate = async (req, res, next) => {
       username,
       thrioAccessToken: authResult.accessToken,
       thrioBaseUrl: config.api.thrio.baseUrl,
+      thrioClientLocation: authResult.clientLocation || null,
+      thrioLocation: authResult.location || null,
       locationId: locationId || null,
       apiKey: ghlApiKey || null,
       ghlAccessToken: ghlApiKey || null,

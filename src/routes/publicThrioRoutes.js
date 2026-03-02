@@ -20,13 +20,17 @@ const leadsUpsert = async (req, res, outboundListId) => {
     }
 
     const url = `${baseUrl}/data/api/types/outboundlist/${outboundListId}/leadsupsert`;
+    const thrioHeaders = {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json'
+    };
+    if (req.user?.thrioClientLocation) {
+      thrioHeaders['X-Client-Location'] = req.user.thrioClientLocation;
+    }
 
     const response = await axios.post(url, req.body, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/json'
-      },
+      headers: thrioHeaders,
       timeout: config.api.nextiva.timeout
     });
 
