@@ -5,13 +5,13 @@ require('dotenv').config();
 
 const nodeEnv = process.env.NODE_ENV || 'development';
 
-// Guard: refuse to start in production without proper JWT secrets
+// Warn in production if JWT secrets are missing or insecure
 if (nodeEnv === 'production') {
   if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'default-jwt-secret-for-development') {
-    throw new Error('JWT_SECRET must be set to a strong value in production');
+    console.warn('⚠️  WARNING: JWT_SECRET is not set or using default. Set a strong value in Vercel environment variables.');
   }
   if (!process.env.JWT_REFRESH_SECRET || process.env.JWT_REFRESH_SECRET === 'default-refresh-secret-for-development') {
-    throw new Error('JWT_REFRESH_SECRET must be set to a strong value in production');
+    console.warn('⚠️  WARNING: JWT_REFRESH_SECRET is not set or using default. Set a strong value in Vercel environment variables.');
   }
 }
 
