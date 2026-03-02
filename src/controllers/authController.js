@@ -434,135 +434,58 @@ const validateExternalAuth = async (req, res) => {
  */
 const authenticateWithThrioRealAPI = async (username, password) => {
   try {
-    const { authBaseUrl, baseUrl, tokenEndpoint } = config.api.thrio;
-    const tokenUrl = `${authBaseUrl || baseUrl}${tokenEndpoint}`;
-    
-    if (logger && logger.info) {
-      logger.info('Attempting REAL Thrio authentication for user:', username || 'unknown');
-    } else {
-      console.log('Attempting REAL Thrio authentication for user:', username || 'unknown');
-    }
-    
-    // Make request to Thrio token-with-authorities endpoint
-    // Convert data to URL encoded format for form submission
-    const formData = new URLSearchParams();
-    formData.append('username', username);
-    formData.append('password', password);
-    formData.append('grant_type', 'password');
-    formData.append('client_id', 'thrio-client');
-    
-    const response = await axios.post(
-      tokenUrl,
-      formData.toString(),
-      {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Accept': 'application/json'
-        },
-        timeout: config.api.thrio.timeout
-      }
-    );
-    
-    if (response.data && response.data.access_token) {
-      if (logger && logger.info) {
-        logger.info('REAL Thrio authentication successful for user:', username || 'unknown');
-      } else {
-        console.log('REAL Thrio authentication successful for user:', username || 'unknown');
-      }
+    const { baseUrl, tokenEndpoint } = config.api.thrio;
+    const tokenUrl = `${baseUrl}${tokenEndpoint}`;
+
+    logger.info('Authenticating with Thrio API for user:', username || 'unknown');
+
+    // Use Basic Auth GET — matches Postman collection and ThrioProxy middleware
+    const auth = Buffer.from(`${username}:${password}`).toString('base64');
+
+    const response = await axios.get(tokenUrl, {
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Accept': 'application/json'
+      },
+      timeout: config.api.thrio.timeout
+    });
+
+    if (response.data && response.data.token) {
+      logger.info('Thrio authentication successful for user:', username || 'unknown');
       return {
         success: true,
-        accessToken: response.data.access_token,
-        refreshToken: response.data.refresh_token,
-        expiresIn: response.data.expires_in,
-        tokenType: response.data.token_type || 'Bearer',
+        accessToken: response.data.token,
+        refreshToken: response.data.refreshToken || null,
+        expiresIn: response.data.expiresIn || 3600,
+        tokenType: 'Bearer',
         authorities: response.data.authorities || [],
-        scope: response.data.scope,
-        demo: false,
-        source: 'real_thrio_api'
-      };
-    } else {
-      if (logger && logger.error) {
-        logger.error('REAL Thrio authentication failed: No access token in response');
-      } else {
-        console.error('REAL Thrio authentication failed: No access token in response');
-      }
-      return {
-        success: false,
-        message: 'Invalid response from Thrio authentication',
-        error: 'NO_ACCESS_TOKEN',
-        demo: false,
-        source: 'real_thrio_api'
+        scope: response.data.scope || null,
+        clientLocation: response.data.clientLocation || null,
+        location: response.data.location || null
       };
     }
-    
+
+    logger.error('Thrio authentication failed: no token in response');
+    return {
+      success: false,
+      message: 'Invalid response from Thrio authentication',
+      error: 'NO_TOKEN'
+    };
+
   } catch (error) {
-    // Safely handle the error object
-    const errorMessage = error && typeof error === 'object' && error.message ? error.message : 'Unknown authentication error';
-    if (logger && logger.error) {
-      logger.error('REAL Thrio authentication error:', errorMessage);
-    } else {
-      console.error('REAL Thrio authentication error:', errorMessage);
-    }
-    
-    if (error && typeof error === 'object' && error.response) {
-      // The request was made and the server responded with a status code
-      // that falls out of the range of 2xx
-      if (logger && logger.error) {
-        logger.error('REAL Thrio authentication error response:', {
-          status: error.response.status,
-          data: error.response.data,
-          headers: error.response.headers
-        });
-      } else {
-        console.error('REAL Thrio authentication error response:', {
-          status: error.response.status,
-          data: error.response.data,
-          headers: error.response.headers
-        });
-      }
-      
-      return {
-        success: false,
-        statusCode: error.response.status,
-        message: error.response.data && (error.response.data.message || error.response.data.error) || 'Thrio authentication failed',
-        error: error.response.data && error.response.data.error || 'AUTHENTICATION_FAILED',
-        demo: false,
-        source: 'real_thrio_api'
-      };
-    } else if (error && typeof error === 'object' && error.request) {
-      // The request was made but no response was received
-      if (logger && logger.error) {
-        logger.error('REAL Thrio authentication no response:', { request: error.request });
-      } else {
-        console.error('REAL Thrio authentication no response:', { request: error.request });
-      }
-      
-      return {
-        success: false,
-        statusCode: 503,
-        message: 'No response from Thrio authentication service',
-        error: 'SERVICE_UNAVAILABLE',
-        demo: false,
-        source: 'real_thrio_api'
-      };
-    } else {
-      // Something happened in setting up the request that triggered an Error
-      const setupErrorMessage = error && typeof error === 'object' && error.message ? error.message : 'Unknown request error';
-      if (logger && logger.error) {
-        logger.error('REAL Thrio authentication request error:', { message: setupErrorMessage });
-      } else {
-        console.error('REAL Thrio authentication request error:', { message: setupErrorMessage });
-      }
-      
-      return {
-        success: false,
-        statusCode: 500,
-        message: 'Error setting up request to Thrio authentication',
-        error: 'REQUEST_SETUP_ERROR',
-        demo: false,
-        source: 'real_thrio_api'
-      };
-    }
+    const errorMessage = error?.message || 'Unknown authentication error';
+    logger.error('Thrio authentication error:', {
+      message: errorMessage,
+      status: error?.response?.status,
+      data: error?.response?.data
+    });
+
+    return {
+      success: false,
+      statusCode: error?.response?.status || (error?.request ? 503 : 500),
+      message: error?.response?.data?.message || error?.response?.data?.error || errorMessage,
+      error: error?.response?.data?.error || 'AUTHENTICATION_FAILED'
+    };
   }
 };
 
