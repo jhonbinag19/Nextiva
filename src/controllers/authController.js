@@ -3,6 +3,7 @@ const axios = require('axios');
 const logger = require('../utils/logger');
 const config = require('../config/config');
 const { goHighLevelService, getThrioCredentials, setThrioCredentials, upsertLocationCustomValue } = require('../services/goHighLevelService');
+const credentialStore = require('../services/credentialStore');
 
 /**
  * Initiate GoHighLevel OAuth flow
@@ -191,18 +192,17 @@ const getToken = async (req, res, next) => {
     const ghlApiKey = apiKey || req.headers['x-ghl-api-key'] || null;
     const ghlLocationId = locationId || req.headers['x-ghl-location-id'] || req.headers['x-location-id'] || null;
 
-    if (!ghlApiKey || !ghlLocationId) {
-      return res.status(400).json({ success: false, message: 'apiKey and locationId are required' });
+    if (!ghlLocationId) {
+      return res.status(400).json({ success: false, message: 'locationId is required' });
     }
 
-    // Validate GHL API key matches the claimed location
-    const ghlValidation = await goHighLevelService.validateApiKey(ghlApiKey);
-    if (ghlValidation?.success && ghlValidation.locationId && ghlValidation.locationId !== ghlLocationId) {
-      return res.status(401).json({ success: false, message: 'apiKey does not match locationId' });
+    // Try Redis first (primary), then GHL custom values (fallback)
+    let stored = await credentialStore.getCredentials(ghlLocationId);
+
+    if (!stored?.success && ghlApiKey) {
+      stored = await getThrioCredentials(ghlLocationId, ghlApiKey);
     }
 
-    // Fetch stored Thrio credentials from GHL sub-location custom values
-    const stored = await getThrioCredentials(ghlLocationId, ghlApiKey);
     if (!stored?.success) {
       return res.status(401).json({
         success: false,
@@ -227,7 +227,7 @@ const getToken = async (req, res, next) => {
       username: stored.credentials.username,
       locationId: ghlLocationId,
       ghlLocationId: ghlLocationId,
-      ghlAccessToken: ghlApiKey,
+      ghlAccessToken: ghlApiKey || stored.credentials.ghlApiKey || null,
       thrioAccessToken: thrioAuthResult.accessToken,
       thrioBaseUrl: config.api.thrio.baseUrl,
       thrioClientLocation: thrioAuthResult.clientLocation || null,
@@ -240,11 +240,7 @@ const getToken = async (req, res, next) => {
     let refreshToken;
     if (process.env.JWT_REFRESH_SECRET) {
       refreshToken = jwt.sign(
-        {
-          locationId: ghlLocationId,
-          ghlLocationId: ghlLocationId,
-          ghlAccessToken: ghlApiKey
-        },
+        { locationId: ghlLocationId, ghlLocationId: ghlLocationId },
         process.env.JWT_REFRESH_SECRET,
         { expiresIn: '7d' }
       );
@@ -289,18 +285,20 @@ const handleRefreshToken = async (req, res, next) => {
       }
       
       const ghlLocationId = decoded.ghlLocationId || decoded.locationId;
-      const ghlAccessToken = decoded.ghlAccessToken;
 
-      if (!ghlLocationId || !ghlAccessToken) {
-        return res.status(401).json({ success: false, message: 'Refresh token is missing GHL context' });
+      if (!ghlLocationId) {
+        return res.status(401).json({ success: false, message: 'Refresh token is missing location context' });
       }
 
-      // Fetch stored Thrio credentials from GHL sub-location
-      const stored = await getThrioCredentials(ghlLocationId, ghlAccessToken);
+      // Fetch stored Thrio credentials from Redis (primary) or GHL (fallback)
+      let stored = await credentialStore.getCredentials(ghlLocationId);
+      if (!stored?.success && decoded.ghlAccessToken) {
+        stored = await getThrioCredentials(ghlLocationId, decoded.ghlAccessToken);
+      }
       if (!stored?.success) {
         return res.status(401).json({
           success: false,
-          message: 'Stored Thrio credentials not found for this location. Re-validate via POST /api/auth/validate.',
+          message: 'Thrio credentials not found. Re-validate via POST /api/auth/validate.',
           details: stored?.message
         });
       }
@@ -323,7 +321,7 @@ const handleRefreshToken = async (req, res, next) => {
           username: stored.credentials.username,
           locationId: ghlLocationId,
           ghlLocationId,
-          ghlAccessToken,
+          ghlAccessToken: stored.credentials.ghlApiKey || null,
           thrioAccessToken: thrioAuthResult.accessToken,
           thrioBaseUrl: config.api.thrio.baseUrl,
           thrioClientLocation: thrioAuthResult.clientLocation || null,
@@ -405,13 +403,26 @@ const validateExternalAuth = async (req, res) => {
       });
     }
 
-    if (apiKey && locationId) {
-      const storeResult = await setThrioCredentials(locationId, apiKey, {
+    // Primary: store in Redis (always works, no GHL dependency)
+    if (locationId) {
+      const redisResult = await credentialStore.storeCredentials(locationId, {
         username: credentialsToUse.username,
         password: credentialsToUse.password
-      });
-      if (!storeResult?.success) {
-        logger.warn('Failed to store Thrio credentials to GHL location', { locationId, message: storeResult?.message });
+      }, apiKey || null);
+      if (!redisResult?.success) {
+        logger.warn('Failed to store credentials in Redis', { locationId, message: redisResult?.message });
+      }
+    }
+
+    // Backup: also store in GHL custom values (best-effort, may fail if key expired)
+    if (apiKey && locationId) {
+      try {
+        await setThrioCredentials(locationId, apiKey, {
+          username: credentialsToUse.username,
+          password: credentialsToUse.password
+        });
+      } catch (ghlErr) {
+        logger.warn('Failed to store credentials in GHL (non-critical)', { locationId, message: ghlErr.message });
       }
     }
 

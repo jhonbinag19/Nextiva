@@ -3,6 +3,7 @@ const config = require('../config/config');
 const jwt = require('jsonwebtoken');
 const { getThrioCredentials } = require('../services/goHighLevelService');
 const { authenticateWithThrio } = require('../controllers/authController');
+const credentialStore = require('../services/credentialStore');
 
 const authenticate = async (req, res, next) => {
   try {
@@ -50,16 +51,19 @@ const authenticate = async (req, res, next) => {
       }
     }
 
-    // ── Path 2 (fallback): GHL API key + location ID ──
-    // Fetch stored Thrio credentials and authenticate with Thrio per-request.
-    if (!ghlApiKey || !locationId) {
+    // ── Path 2 (fallback): Location ID (+ optional GHL API key) ──
+    // Fetch stored Thrio credentials from Redis (primary) or GHL (fallback).
+    if (!locationId) {
       return res.status(401).json({
         success: false,
-        message: 'Authorization required. Use Bearer <JWT> from POST /api/auth/token, or provide X-GHL-API-Key and X-GHL-Location-Id headers.'
+        message: 'Authorization required. Use Bearer <JWT> from POST /api/auth/token, or provide X-GHL-Location-Id header.'
       });
     }
 
-    const stored = await getThrioCredentials(locationId, ghlApiKey);
+    let stored = await credentialStore.getCredentials(locationId);
+    if (!stored?.success && ghlApiKey) {
+      stored = await getThrioCredentials(locationId, ghlApiKey);
+    }
     if (!stored?.success) {
       return res.status(401).json({
         success: false,
@@ -80,8 +84,8 @@ const authenticate = async (req, res, next) => {
       thrioClientLocation: authResult.clientLocation || null,
       thrioLocation: authResult.location || null,
       locationId,
-      apiKey: ghlApiKey,
-      ghlAccessToken: ghlApiKey,
+      apiKey: ghlApiKey || stored.credentials.ghlApiKey || null,
+      ghlAccessToken: ghlApiKey || stored.credentials.ghlApiKey || null,
       ghlLocationId: locationId,
     };
 
