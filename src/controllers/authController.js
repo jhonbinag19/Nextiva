@@ -853,8 +853,6 @@ const authenticateWithThrioRealAPI = async (username, password) => {
 const authenticateWithThrio = async (username, password) => {
   try {
     const isDemoCredentials =
-      (username === 'nextiva+wisechoiceremodeling@wisechoiceremodel.com' &&
-       password === 'GHLwiseChoiceAPI2025!!') ||
       ((username === 'demo@thrio.com' || username === 'test@thrio.com') &&
        password === 'demo123');
 
@@ -879,21 +877,12 @@ const authenticateWithThrio = async (username, password) => {
     }
 
     if (process.env.NODE_ENV === 'development') {
-      if (logger && logger.info) {
-        logger.info('Using fallback demo mode for Thrio authentication with username:', username);
-      }
-      
-      return {
-        success: true,
-        accessToken: 'demo-access-token-' + Date.now() + '-' + username.replace(/[^a-zA-Z0-9]/g, ''),
-        refreshToken: 'demo-refresh-token-' + Date.now() + '-' + username.replace(/[^a-zA-Z0-9]/g, ''),
-        tokenType: 'Bearer',
-        expiresIn: 3600,
-        authorities: ['ROLE_USER', 'ROLE_ADMIN'],
-        scope: 'read write',
-        demo: true,
-        source: 'fallback_demo_mode'
-      };
+      // In development, we can still use fallback demo mode if explicit demo creds aren't used,
+      // BUT for Wise Choice specifically we want to try real API if possible.
+      // However, if the real API fails or isn't reachable from local, we might want fallback.
+      // For now, based on user request "shouldnt be using demo in any of the endpoints",
+      // we will ONLY use demo mode for explicit 'demo@thrio.com' users.
+      // Any other user (including Wise Choice) will go to real API.
     }
 
     return await authenticateWithThrioRealAPI(username, password);
