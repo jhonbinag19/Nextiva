@@ -71,4 +71,24 @@ router.post('/public/outboundlist/leadsupsert', authenticate, (req, res) => {
   return leadsUpsert(req, res, outboundListId);
 });
 
+// Debug echo — returns exactly what was received (no auth). Remove after debugging.
+router.post('/public/debug-echo', (req, res) => {
+  res.status(200).json({
+    success: true,
+    received: {
+      headers: {
+        contentType: req.headers['content-type'],
+        authorization: req.headers.authorization ? 'present' : 'missing',
+        xGhlLocationId: req.headers['x-ghl-location-id'] || null,
+        xLocationId: req.headers['x-location-id'] || null
+      },
+      query: req.query,
+      bodyType: typeof req.body,
+      bodyIsArray: Array.isArray(req.body),
+      body: req.body,
+      url: req.originalUrl
+    }
+  });
+});
+
 module.exports = router;
