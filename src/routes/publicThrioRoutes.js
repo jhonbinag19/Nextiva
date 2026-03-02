@@ -7,6 +7,7 @@ const { createThrioClient } = require('../services/thrioService');
 const router = express.Router();
 
 const leadsUpsert = async (req, res, outboundListId) => {
+  let payload = req.body;
   try {
     if (!outboundListId) {
       return res.status(400).json({ success: false, message: 'outboundListId is required' });
@@ -18,7 +19,6 @@ const leadsUpsert = async (req, res, outboundListId) => {
     }
 
     // Strip auth-only fields before forwarding to Thrio
-    let payload = req.body;
     if (Array.isArray(payload)) {
       payload = payload.map(({ locationId, ghlLocationId, ...lead }) => lead);
     } else if (payload && typeof payload === 'object') {
