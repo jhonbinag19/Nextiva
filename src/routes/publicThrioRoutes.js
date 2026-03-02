@@ -10,12 +10,12 @@ const leadsUpsert = async (req, res, outboundListId) => {
   let payload = req.body;
   try {
     if (!outboundListId) {
-      return res.status(400).json({ success: false, message: 'outboundListId is required' });
+      return res.status(200).json({ success: false, message: 'outboundListId is required' });
     }
 
     const token = req.user?.thrioAccessToken;
     if (!token) {
-      return res.status(401).json({ success: false, message: 'Missing Thrio access token' });
+      return res.status(200).json({ success: false, message: 'Missing Thrio access token', debug: { user: req.user ? 'present' : 'missing' } });
     }
 
     // Strip auth-only fields before forwarding to Thrio
@@ -32,7 +32,7 @@ const leadsUpsert = async (req, res, outboundListId) => {
       payload
     );
 
-    return res.status(response.status || 200).json({ success: true, data: response.data });
+    return res.status(200).json({ success: true, data: response.data });
   } catch (error) {
     const safePayload = payload || req.body || null;
     logger.error('leadsupsert failed', {
@@ -41,14 +41,17 @@ const leadsUpsert = async (req, res, outboundListId) => {
       thrioError: error.response?.data,
       outboundListId
     });
-    return res.status(error.response?.status || 500).json({
+    return res.status(200).json({
       success: false,
       message: error.response?.data?.message || error.message || 'Failed to upsert lead',
+      thrioStatus: error.response?.status || null,
       thrioError: error.response?.data || null,
       debug: {
         outboundListId,
-        thrioUrl: `${req.user?.thrioBaseUrl || 'https://nextiva.thrio.io'}/data/api/types/outboundlist/${outboundListId}/leadsupsert`,
-        thrioStatus: error.response?.status || null,
+        thrioUrl: `${req.user?.thrioBaseUrl || 'N/A'}/data/api/types/outboundlist/${outboundListId}/leadsupsert`,
+        thrioBaseUrl: req.user?.thrioBaseUrl || null,
+        hasToken: !!req.user?.thrioAccessToken,
+        locationId: req.user?.locationId || null,
         payloadSent: safePayload
       }
     });

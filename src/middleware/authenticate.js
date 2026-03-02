@@ -65,9 +65,16 @@ const authenticate = async (req, res, next) => {
     });
 
     if (!locationId) {
-      return res.status(401).json({
+      return res.status(200).json({
         success: false,
-        message: 'Authorization required. Use Bearer <JWT> from POST /api/auth/token, or provide X-GHL-Location-Id header.'
+        message: 'No locationId found. Send locationId in the body array, query param, or X-GHL-Location-Id header.',
+        debug: {
+          bodyType: typeof req.body,
+          bodyIsArray: Array.isArray(req.body),
+          bodyFirstItem: Array.isArray(req.body) ? req.body[0] : req.body,
+          queryParams: req.query,
+          url: req.originalUrl
+        }
       });
     }
 
