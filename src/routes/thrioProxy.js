@@ -1,9 +1,8 @@
 const express = require('express');
-const axios = require('axios');
 const { thrioProxy } = require('../middleware/thrioProxy');
 const logger = require('../utils/logger');
 const { authenticate } = require('../middleware/authenticate');
-const config = require('../config/config');
+const { createThrioClient } = require('../services/thrioService');
 
 const router = express.Router();
 
@@ -89,35 +88,16 @@ router.get('/status', authenticate, (req, res) => {
  */
 router.get('/get/*', authenticate, async (req, res) => {
   try {
-    const endpoint = req.params[0]; // Get the wildcard path
-    const params = req.query;
-    
-    logger.debug('Proxying GET request to Thrio:', endpoint);
-    const baseUrl = req.user?.thrioBaseUrl || config.api.thrio.baseUrl;
+    const endpoint = String(req.params[0] || '').replace(/^\/+/, '');
     const token = req.user?.thrioAccessToken;
-    if (!token) {
-      return res.status(401).json({ success: false, error: 'Missing Thrio access token' });
-    }
+    if (!token) return res.status(401).json({ success: false, error: 'Missing Thrio access token' });
 
-    const url = `${baseUrl}/${String(endpoint || '').replace(/^\/+/, '')}`;
-    const response = await axios.get(url, {
-      params,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json'
-      },
-      timeout: config.api.nextiva.timeout
-    });
-
+    const client = createThrioClient(token, req.user?.thrioClientLocation, req.user?.thrioBaseUrl);
+    const response = await client.get(`/${endpoint}`, { params: req.query });
     res.status(response.status || 200).json({ success: true, data: response.data });
-    
   } catch (error) {
     logger.error('Thrio GET proxy failed:', error.message);
-    res.status(error.response?.status || 500).json({
-      success: false,
-      error: 'Thrio API request failed',
-      details: error.message
-    });
+    res.status(error.response?.status || 500).json({ success: false, error: 'Thrio API request failed', details: error.message });
   }
 });
 
@@ -127,40 +107,16 @@ router.get('/get/*', authenticate, async (req, res) => {
  */
 router.post('/post/*', authenticate, async (req, res) => {
   try {
-    const endpoint = req.params[0];
-    const data = req.body;
-    
-    logger.debug('Proxying POST request to Thrio:', endpoint);
-
-    const baseUrl = req.user?.thrioBaseUrl || config.api.thrio.baseUrl;
+    const endpoint = String(req.params[0] || '').replace(/^\/+/, '');
     const token = req.user?.thrioAccessToken;
-    if (!token) {
-      return res.status(401).json({ success: false, error: 'Missing Thrio access token' });
-    }
+    if (!token) return res.status(401).json({ success: false, error: 'Missing Thrio access token' });
 
-    const url = `${baseUrl}/${String(endpoint || '').replace(/^\/+/, '')}`;
-    const response = await axios.post(url, data, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/json'
-      },
-      timeout: config.api.nextiva.timeout
-    });
-
+    const client = createThrioClient(token, req.user?.thrioClientLocation, req.user?.thrioBaseUrl);
+    const response = await client.post(`/${endpoint}`, req.body);
     res.status(response.status || 200).json({ success: true, data: response.data });
-    
   } catch (error) {
-    if (logger && logger.error) {
-      logger.error('Thrio POST proxy failed:', error.message);
-    } else {
-      console.error('Thrio POST proxy failed:', error.message);
-    }
-    res.status(error.response?.status || 500).json({
-      success: false,
-      error: 'Thrio API request failed',
-      details: error.message
-    });
+    logger.error('Thrio POST proxy failed:', error.message);
+    res.status(error.response?.status || 500).json({ success: false, error: 'Thrio API request failed', details: error.message });
   }
 });
 
@@ -170,40 +126,16 @@ router.post('/post/*', authenticate, async (req, res) => {
  */
 router.put('/put/*', authenticate, async (req, res) => {
   try {
-    const endpoint = req.params[0];
-    const data = req.body;
-    
-    logger.debug('Proxying PUT request to Thrio:', endpoint);
-
-    const baseUrl = req.user?.thrioBaseUrl || config.api.thrio.baseUrl;
+    const endpoint = String(req.params[0] || '').replace(/^\/+/, '');
     const token = req.user?.thrioAccessToken;
-    if (!token) {
-      return res.status(401).json({ success: false, error: 'Missing Thrio access token' });
-    }
+    if (!token) return res.status(401).json({ success: false, error: 'Missing Thrio access token' });
 
-    const url = `${baseUrl}/${String(endpoint || '').replace(/^\/+/, '')}`;
-    const response = await axios.put(url, data, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/json'
-      },
-      timeout: config.api.nextiva.timeout
-    });
-
+    const client = createThrioClient(token, req.user?.thrioClientLocation, req.user?.thrioBaseUrl);
+    const response = await client.put(`/${endpoint}`, req.body);
     res.status(response.status || 200).json({ success: true, data: response.data });
-    
   } catch (error) {
-    if (logger && logger.error) {
-      logger.error('Thrio PUT proxy failed:', error.message);
-    } else {
-      console.error('Thrio PUT proxy failed:', error.message);
-    }
-    res.status(error.response?.status || 500).json({
-      success: false,
-      error: 'Thrio API request failed',
-      details: error.message
-    });
+    logger.error('Thrio PUT proxy failed:', error.message);
+    res.status(error.response?.status || 500).json({ success: false, error: 'Thrio API request failed', details: error.message });
   }
 });
 
@@ -213,38 +145,16 @@ router.put('/put/*', authenticate, async (req, res) => {
  */
 router.delete('/delete/*', authenticate, async (req, res) => {
   try {
-    const endpoint = req.params[0];
-    
-    logger.debug('Proxying DELETE request to Thrio:', endpoint);
-
-    const baseUrl = req.user?.thrioBaseUrl || config.api.thrio.baseUrl;
+    const endpoint = String(req.params[0] || '').replace(/^\/+/, '');
     const token = req.user?.thrioAccessToken;
-    if (!token) {
-      return res.status(401).json({ success: false, error: 'Missing Thrio access token' });
-    }
+    if (!token) return res.status(401).json({ success: false, error: 'Missing Thrio access token' });
 
-    const url = `${baseUrl}/${String(endpoint || '').replace(/^\/+/, '')}`;
-    const response = await axios.delete(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json'
-      },
-      timeout: config.api.nextiva.timeout
-    });
-
+    const client = createThrioClient(token, req.user?.thrioClientLocation, req.user?.thrioBaseUrl);
+    const response = await client.delete(`/${endpoint}`);
     res.status(response.status || 200).json({ success: true, data: response.data });
-    
   } catch (error) {
-    if (logger && logger.error) {
-      logger.error('Thrio DELETE proxy failed:', error.message);
-    } else {
-      console.error('Thrio DELETE proxy failed:', error.message);
-    }
-    res.status(error.response?.status || 500).json({
-      success: false,
-      error: 'Thrio API request failed',
-      details: error.message
-    });
+    logger.error('Thrio DELETE proxy failed:', error.message);
+    res.status(error.response?.status || 500).json({ success: false, error: 'Thrio API request failed', details: error.message });
   }
 });
 
@@ -255,60 +165,34 @@ router.delete('/delete/*', authenticate, async (req, res) => {
 router.all('/request', authenticate, async (req, res) => {
   try {
     const { method, endpoint, data, params } = req.body;
-    
     if (!method || !endpoint) {
-      return res.status(400).json({
-        success: false,
-        error: 'Method and endpoint are required'
-      });
-    }
-    
-    logger.debug(`Proxying ${method.toUpperCase()} request to Thrio:`, endpoint);
-    
-    const baseUrl = req.user?.thrioBaseUrl || config.api.thrio.baseUrl;
-    const token = req.user?.thrioAccessToken;
-    if (!token) {
-      return res.status(401).json({ success: false, error: 'Missing Thrio access token' });
+      return res.status(400).json({ success: false, error: 'Method and endpoint are required' });
     }
 
-    const url = `${baseUrl}/${String(endpoint || '').replace(/^\/+/, '')}`;
+    const token = req.user?.thrioAccessToken;
+    if (!token) return res.status(401).json({ success: false, error: 'Missing Thrio access token' });
+
+    const client = createThrioClient(token, req.user?.thrioClientLocation, req.user?.thrioBaseUrl);
+    const path = `/${String(endpoint).replace(/^\/+/, '')}`;
     const lower = String(method).toLowerCase();
 
     let response;
     if (lower === 'get') {
-      response = await axios.get(url, {
-        params: params || {},
-        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-        timeout: config.api.nextiva.timeout
-      });
+      response = await client.get(path, { params: params || {} });
     } else if (lower === 'post') {
-      response = await axios.post(url, data || {}, {
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Accept: 'application/json' },
-        timeout: config.api.nextiva.timeout
-      });
+      response = await client.post(path, data || {});
     } else if (lower === 'put') {
-      response = await axios.put(url, data || {}, {
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Accept: 'application/json' },
-        timeout: config.api.nextiva.timeout
-      });
+      response = await client.put(path, data || {});
     } else if (lower === 'delete') {
-      response = await axios.delete(url, {
-        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-        timeout: config.api.nextiva.timeout
-      });
+      response = await client.delete(path);
     } else {
       return res.status(400).json({ success: false, error: `Unsupported HTTP method: ${method}` });
     }
 
     res.status(response.status || 200).json({ success: true, data: response.data });
-    
   } catch (error) {
     logger.error('Thrio generic proxy failed:', error.message);
-    res.status(error.response?.status || 500).json({
-      success: false,
-      error: 'Thrio API request failed',
-      details: error.message
-    });
+    res.status(error.response?.status || 500).json({ success: false, error: 'Thrio API request failed', details: error.message });
   }
 });
 

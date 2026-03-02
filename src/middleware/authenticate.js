@@ -67,7 +67,14 @@ const authenticate = async (req, res, next) => {
       password = headerPassword;
       usingDirectThrioCredentials = true;
       } else if (scheme === 'Bearer' && tokenOrCreds && locationId && !ghlApiKey) {
+      // Bearer token IS the GHL API key — fetch stored Thrio credentials immediately
       ghlApiKey = tokenOrCreds;
+      const stored = await getThrioCredentials(locationId, ghlApiKey);
+      if (!stored.success) {
+        return res.status(401).json({ success: false, message: 'Stored credentials not found for location', details: stored.message });
+      }
+      username = stored.credentials.username;
+      password = stored.credentials.password;
       } else if (scheme === 'Bearer' && tokenOrCreds && ghlApiKey && locationId) {
       const stored = await getThrioCredentials(locationId, ghlApiKey);
       if (!stored.success) {
