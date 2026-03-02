@@ -19,7 +19,7 @@ const createThrioClient = (token, clientLocation = null, baseUrl = null) => {
   const resolvedBase = baseUrl || config.api.thrio.baseUrl;
 
   const headers = {
-    Authorization: `Bearer ${token}`,
+    Authorization: token,
     'Content-Type': 'application/json',
     Accept: 'application/json'
   };

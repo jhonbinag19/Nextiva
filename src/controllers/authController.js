@@ -485,9 +485,29 @@ const authenticateWithThrioRealAPI = async (username, password) => {
 
     if (response.data && response.data.token) {
       logger.info('Thrio authentication successful for user:', username || 'unknown');
+
+      const thrioToken = response.data.token;
+      const thrioLocation = response.data.location || response.data.clientLocation || baseUrl;
+
+      // Login step: POST {{location}}/users/api/login to create a session
+      // Per Thrio docs: "This API must be called after the AUTH API call
+      // in order to create a valid session for the user."
+      try {
+        await axios.post(`${thrioLocation}/users/api/login`, null, {
+          headers: {
+            'Authorization': thrioToken,
+            'Content-Type': 'application/json'
+          },
+          timeout: config.api.thrio.timeout
+        });
+        logger.info('Thrio login session created for user:', username || 'unknown');
+      } catch (loginErr) {
+        logger.warn('Thrio login step failed (non-fatal):', loginErr?.response?.status, loginErr?.message);
+      }
+
       return {
         success: true,
-        accessToken: response.data.token,
+        accessToken: thrioToken,
         refreshToken: response.data.refreshToken || null,
         expiresIn: response.data.expiresIn || 3600,
         tokenType: 'Bearer',
