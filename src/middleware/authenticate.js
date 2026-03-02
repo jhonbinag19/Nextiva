@@ -80,7 +80,7 @@ const authenticate = async (req, res, next) => {
     req.user = {
       username: stored.credentials.username,
       thrioAccessToken: authResult.accessToken,
-      thrioBaseUrl: config.api.thrio.baseUrl,
+      thrioBaseUrl: authResult.location || authResult.clientLocation || config.api.thrio.baseUrl,
       thrioClientLocation: authResult.clientLocation || null,
       thrioLocation: authResult.location || null,
       locationId,
