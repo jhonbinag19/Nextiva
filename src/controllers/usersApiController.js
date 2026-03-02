@@ -1,36 +1,23 @@
-const axios = require('axios');
-const config = require('../config/config');
 const logger = require('../utils/logger');
+const { createThrioClient } = require('../services/thrioService');
 
 const proxyUsersSms = async (req, res, extraPath = '') => {
   try {
-    const baseUrl = req.user?.thrioBaseUrl || config.api.thrio.baseUrl;
     const token = req.user?.thrioAccessToken;
     if (!token) {
       return res.status(401).json({ success: false, message: 'Missing Thrio access token' });
     }
 
+    const client = createThrioClient(token, req.user?.thrioClientLocation, req.user?.thrioBaseUrl);
     const path = `/users/api/sms${extraPath ? `/${extraPath}` : ''}`;
-    const url = `${baseUrl}${path}`;
-
     const method = (req.method || 'GET').toLowerCase();
-    const axiosConfig = {
-      method,
-      url,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
-        'Content-Type': 'application/json'
-      },
-      params: req.query,
-      timeout: config.api.thrio.timeout
-    };
 
+    const axiosConfig = { method, url: path, params: req.query };
     if (!['get', 'head'].includes(method)) {
       axiosConfig.data = req.body;
     }
 
-    const response = await axios(axiosConfig);
+    const response = await client(axiosConfig);
     res.status(response.status || 200).json({ success: true, data: response.data });
   } catch (error) {
     logger.error('Users SMS proxy request failed', { message: error.message, status: error.response?.status });
@@ -53,33 +40,21 @@ const usersSmsWildcard = async (req, res) => {
 
 const proxyWorkflowsWebform = async (req, res, extraPath = '') => {
   try {
-    const baseUrl = req.user?.thrioBaseUrl || config.api.thrio.baseUrl;
     const token = req.user?.thrioAccessToken;
     if (!token) {
       return res.status(401).json({ success: false, message: 'Missing Thrio access token' });
     }
 
+    const client = createThrioClient(token, req.user?.thrioClientLocation, req.user?.thrioBaseUrl);
     const path = `/workflows/api/webform${extraPath ? `/${extraPath}` : ''}`;
-    const url = `${baseUrl}${path}`;
-
     const method = (req.method || 'GET').toLowerCase();
-    const axiosConfig = {
-      method,
-      url,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
-        'Content-Type': 'application/json'
-      },
-      params: req.query,
-      timeout: config.api.thrio.timeout
-    };
 
+    const axiosConfig = { method, url: path, params: req.query };
     if (!['get', 'head'].includes(method)) {
       axiosConfig.data = req.body;
     }
 
-    const response = await axios(axiosConfig);
+    const response = await client(axiosConfig);
     res.status(response.status || 200).json({ success: true, data: response.data });
   } catch (error) {
     logger.error('Workflows webform proxy request failed', { message: error.message, status: error.response?.status });

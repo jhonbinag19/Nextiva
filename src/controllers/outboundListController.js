@@ -1,27 +1,14 @@
-const axios = require('axios');
-const config = require('../config/config');
 const logger = require('../utils/logger');
+const { createThrioClient } = require('../services/thrioService');
 
 const postLeadToOutboundList = async (req, res, outboundListId) => {
   try {
-    const baseUrl = req.user?.thrioBaseUrl || config.api.thrio.baseUrl;
     const token = req.user?.thrioAccessToken;
     if (!token) {
       return res.status(401).json({ success: false, message: 'Missing Thrio access token' });
     }
-    const url = `${baseUrl}/data/api/types/outboundlist/${outboundListId}/leadsupsert`;
-    const thrioHeaders = {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      Accept: 'application/json'
-    };
-    if (req.user?.thrioClientLocation) {
-      thrioHeaders['X-Client-Location'] = req.user.thrioClientLocation;
-    }
-    const response = await axios.post(url, req.body, {
-      headers: thrioHeaders,
-      timeout: config.api.nextiva.timeout
-    });
+    const client = createThrioClient(token, req.user?.thrioClientLocation, req.user?.thrioBaseUrl);
+    const response = await client.post(`/data/api/types/outboundlist/${outboundListId}/leadsupsert`, req.body);
     res.status(response.status || 200).json({ success: true, data: response.data });
   } catch (error) {
     logger.error('Outbound list lead creation failed', { message: error.message, status: error.response?.status });
@@ -34,24 +21,12 @@ const postLeadToOutboundList = async (req, res, outboundListId) => {
 
 const createCampaignOutboundList = async (req, res) => {
   try {
-    const baseUrl = req.user?.thrioBaseUrl || config.api.thrio.baseUrl;
     const token = req.user?.thrioAccessToken;
     if (!token) {
       return res.status(401).json({ success: false, message: 'Missing Thrio access token' });
     }
-    const url = `${baseUrl}/data/api/types/campaignoutboundlist`;
-    const thrioHeaders = {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      Accept: 'application/json'
-    };
-    if (req.user?.thrioClientLocation) {
-      thrioHeaders['X-Client-Location'] = req.user.thrioClientLocation;
-    }
-    const response = await axios.post(url, req.body, {
-      headers: thrioHeaders,
-      timeout: config.api.nextiva.timeout
-    });
+    const client = createThrioClient(token, req.user?.thrioClientLocation, req.user?.thrioBaseUrl);
+    const response = await client.post('/data/api/types/campaignoutboundlist', req.body);
     res.status(response.status || 200).json({ success: true, data: response.data });
   } catch (error) {
     logger.error('Campaign outbound list request failed', { message: error.message, status: error.response?.status });
