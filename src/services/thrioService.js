@@ -24,9 +24,8 @@ const createThrioClient = (token, clientLocation = null, baseUrl = null) => {
     Accept: 'application/json'
   };
 
-  if (clientLocation) {
-    headers['X-Client-Location'] = clientLocation;
-  }
+  // Note: clientLocation is preserved for reference but not sent as a header.
+  // Thrio docs only require Authorization: Bearer <token>.
 
   const client = axios.create({
     baseURL: resolvedBase,
