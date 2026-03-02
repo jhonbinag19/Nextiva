@@ -107,6 +107,46 @@ const deleteCredentials = async (locationId) => {
 };
 
 /**
+ * Cache a Thrio auth session (token + baseUrl) for a location.
+ * TTL defaults to 45 minutes (tokens typically expire in 60 min).
+ * @param {string} locationId
+ * @param {Object} session - { accessToken, baseUrl, clientLocation, location }
+ * @param {number} [ttlSeconds=2700] - Time to live in seconds
+ */
+const cacheSession = async (locationId, session, ttlSeconds = 2700) => {
+  const client = getRedis();
+  if (!client) return;
+
+  try {
+    const key = `thrio_session:${locationId}`;
+    await client.set(key, JSON.stringify(session), { ex: ttlSeconds });
+    logger.info('Cached Thrio session for location:', locationId);
+  } catch (error) {
+    logger.warn('Failed to cache Thrio session:', error.message);
+  }
+};
+
+/**
+ * Retrieve a cached Thrio auth session for a location.
+ * @param {string} locationId
+ * @returns {Object|null} { accessToken, baseUrl, clientLocation, location } or null
+ */
+const getCachedSession = async (locationId) => {
+  const client = getRedis();
+  if (!client) return null;
+
+  try {
+    const key = `thrio_session:${locationId}`;
+    const raw = await client.get(key);
+    if (!raw) return null;
+    return typeof raw === 'string' ? JSON.parse(raw) : raw;
+  } catch (error) {
+    logger.warn('Failed to retrieve cached Thrio session:', error.message);
+    return null;
+  }
+};
+
+/**
  * Check if Redis is available and configured.
  * @returns {boolean}
  */
@@ -118,5 +158,7 @@ module.exports = {
   storeCredentials,
   getCredentials,
   deleteCredentials,
+  cacheSession,
+  getCachedSession,
   isAvailable
 };

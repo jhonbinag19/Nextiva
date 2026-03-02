@@ -71,6 +71,25 @@ const authenticate = async (req, res, next) => {
       });
     }
 
+    // ── Try cached Thrio session first (fast path) ──
+    const cached = await credentialStore.getCachedSession(locationId);
+    if (cached?.accessToken) {
+      logger.info('Using cached Thrio session for location:', locationId);
+      req.user = {
+        username: cached.username || 'cached',
+        thrioAccessToken: cached.accessToken,
+        thrioBaseUrl: cached.baseUrl || config.api.thrio.baseUrl,
+        thrioClientLocation: cached.clientLocation || null,
+        thrioLocation: cached.location || null,
+        locationId,
+        apiKey: ghlApiKey || cached.ghlApiKey || null,
+        ghlAccessToken: ghlApiKey || cached.ghlApiKey || null,
+        ghlLocationId: locationId,
+      };
+      return next();
+    }
+
+    // ── No cached session — authenticate fresh ──
     let stored = await credentialStore.getCredentials(locationId);
     if (!stored?.success && ghlApiKey) {
       stored = await getThrioCredentials(locationId, ghlApiKey);
@@ -89,11 +108,20 @@ const authenticate = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'Stored Thrio credentials are invalid', details: authResult?.message || authResult?.error });
     }
 
+    // Cache the session for subsequent requests (45 min TTL)
+    await credentialStore.cacheSession(locationId, {
+      accessToken: authResult.accessToken,
+      baseUrl: authResult.location || authResult.clientLocation || config.api.thrio.baseUrl,
+      clientLocation: authResult.clientLocation || null,
+      location: authResult.location || null,
+      username: stored.credentials.username,
+      ghlApiKey: ghlApiKey || stored.credentials.ghlApiKey || null
+    });
+
     req.user = {
       username: stored.credentials.username,
       thrioAccessToken: authResult.accessToken,
       thrioBaseUrl: authResult.location || authResult.clientLocation || config.api.thrio.baseUrl,
-      // Note: location = data API domain per Thrio docs
       thrioClientLocation: authResult.clientLocation || null,
       thrioLocation: authResult.location || null,
       locationId,
