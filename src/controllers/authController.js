@@ -229,7 +229,7 @@ const getToken = async (req, res, next) => {
       ghlLocationId: ghlLocationId,
       ghlAccessToken: ghlApiKey || stored.credentials.ghlApiKey || null,
       thrioAccessToken: thrioAuthResult.accessToken,
-      thrioBaseUrl: thrioAuthResult.location || thrioAuthResult.clientLocation || config.api.thrio.baseUrl,
+      thrioBaseUrl: thrioAuthResult.clientLocation || thrioAuthResult.location || config.api.thrio.baseUrl,
       thrioClientLocation: thrioAuthResult.clientLocation || null,
       thrioLocation: thrioAuthResult.location || null,
       authorities: thrioAuthResult.authorities || []
@@ -323,7 +323,7 @@ const handleRefreshToken = async (req, res, next) => {
           ghlLocationId,
           ghlAccessToken: stored.credentials.ghlApiKey || null,
           thrioAccessToken: thrioAuthResult.accessToken,
-          thrioBaseUrl: thrioAuthResult.location || thrioAuthResult.clientLocation || config.api.thrio.baseUrl,
+          thrioBaseUrl: thrioAuthResult.clientLocation || thrioAuthResult.location || config.api.thrio.baseUrl,
           thrioClientLocation: thrioAuthResult.clientLocation || null,
           thrioLocation: thrioAuthResult.location || null,
           authorities: thrioAuthResult.authorities || []
@@ -467,8 +467,8 @@ const validateExternalAuth = async (req, res) => {
  */
 const authenticateWithThrioRealAPI = async (username, password) => {
   try {
-    const { baseUrl, tokenEndpoint } = config.api.thrio;
-    const tokenUrl = `${baseUrl}${tokenEndpoint}`;
+    const { authBaseUrl, baseUrl, tokenEndpoint } = config.api.thrio;
+    const tokenUrl = `${authBaseUrl || baseUrl}${tokenEndpoint}`;
 
     logger.info('Authenticating with Thrio API for user:', username || 'unknown');
 
