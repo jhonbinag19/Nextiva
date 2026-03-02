@@ -23,7 +23,7 @@ router.post('/init', authenticate, async (req, res) => {
     if (!username || !password) {
       return res.status(400).json({
         success: false,
-        error: 'Username and password are required'
+        message: 'Username and password are required'
       });
     }
     
@@ -49,7 +49,7 @@ router.post('/init', authenticate, async (req, res) => {
     logger.error('Thrio proxy init failed:', error.message);
     res.status(500).json({
       success: false,
-      error: 'Failed to initialize Thrio connection',
+      message: 'Failed to initialize Thrio connection',
       details: error.message
     });
   }
@@ -77,7 +77,7 @@ router.get('/status', authenticate, (req, res) => {
     logger.error('Thrio status check failed:', error.message);
     res.status(500).json({
       success: false,
-      error: 'Failed to get Thrio status'
+      message: 'Failed to get Thrio status'
     });
   }
 });
@@ -90,14 +90,14 @@ router.get('/get/*', authenticate, async (req, res) => {
   try {
     const endpoint = String(req.params[0] || '').replace(/^\/+/, '');
     const token = req.user?.thrioAccessToken;
-    if (!token) return res.status(401).json({ success: false, error: 'Missing Thrio access token' });
+    if (!token) return res.status(401).json({ success: false, message: 'Missing Thrio access token' });
 
     const client = createThrioClient(token, req.user?.thrioClientLocation, req.user?.thrioBaseUrl);
     const response = await client.get(`/${endpoint}`, { params: req.query });
     res.status(response.status || 200).json({ success: true, data: response.data });
   } catch (error) {
     logger.error('Thrio GET proxy failed:', error.message);
-    res.status(error.response?.status || 500).json({ success: false, error: 'Thrio API request failed', details: error.message });
+    res.status(error.response?.status || 500).json({ success: false, message: 'Thrio API request failed', details: error.message });
   }
 });
 
@@ -109,14 +109,14 @@ router.post('/post/*', authenticate, async (req, res) => {
   try {
     const endpoint = String(req.params[0] || '').replace(/^\/+/, '');
     const token = req.user?.thrioAccessToken;
-    if (!token) return res.status(401).json({ success: false, error: 'Missing Thrio access token' });
+    if (!token) return res.status(401).json({ success: false, message: 'Missing Thrio access token' });
 
     const client = createThrioClient(token, req.user?.thrioClientLocation, req.user?.thrioBaseUrl);
     const response = await client.post(`/${endpoint}`, req.body);
     res.status(response.status || 200).json({ success: true, data: response.data });
   } catch (error) {
     logger.error('Thrio POST proxy failed:', error.message);
-    res.status(error.response?.status || 500).json({ success: false, error: 'Thrio API request failed', details: error.message });
+    res.status(error.response?.status || 500).json({ success: false, message: 'Thrio API request failed', details: error.message });
   }
 });
 
@@ -128,14 +128,14 @@ router.put('/put/*', authenticate, async (req, res) => {
   try {
     const endpoint = String(req.params[0] || '').replace(/^\/+/, '');
     const token = req.user?.thrioAccessToken;
-    if (!token) return res.status(401).json({ success: false, error: 'Missing Thrio access token' });
+    if (!token) return res.status(401).json({ success: false, message: 'Missing Thrio access token' });
 
     const client = createThrioClient(token, req.user?.thrioClientLocation, req.user?.thrioBaseUrl);
     const response = await client.put(`/${endpoint}`, req.body);
     res.status(response.status || 200).json({ success: true, data: response.data });
   } catch (error) {
     logger.error('Thrio PUT proxy failed:', error.message);
-    res.status(error.response?.status || 500).json({ success: false, error: 'Thrio API request failed', details: error.message });
+    res.status(error.response?.status || 500).json({ success: false, message: 'Thrio API request failed', details: error.message });
   }
 });
 
@@ -147,14 +147,14 @@ router.delete('/delete/*', authenticate, async (req, res) => {
   try {
     const endpoint = String(req.params[0] || '').replace(/^\/+/, '');
     const token = req.user?.thrioAccessToken;
-    if (!token) return res.status(401).json({ success: false, error: 'Missing Thrio access token' });
+    if (!token) return res.status(401).json({ success: false, message: 'Missing Thrio access token' });
 
     const client = createThrioClient(token, req.user?.thrioClientLocation, req.user?.thrioBaseUrl);
     const response = await client.delete(`/${endpoint}`);
     res.status(response.status || 200).json({ success: true, data: response.data });
   } catch (error) {
     logger.error('Thrio DELETE proxy failed:', error.message);
-    res.status(error.response?.status || 500).json({ success: false, error: 'Thrio API request failed', details: error.message });
+    res.status(error.response?.status || 500).json({ success: false, message: 'Thrio API request failed', details: error.message });
   }
 });
 
@@ -166,11 +166,11 @@ router.all('/request', authenticate, async (req, res) => {
   try {
     const { method, endpoint, data, params } = req.body;
     if (!method || !endpoint) {
-      return res.status(400).json({ success: false, error: 'Method and endpoint are required' });
+      return res.status(400).json({ success: false, message: 'Method and endpoint are required' });
     }
 
     const token = req.user?.thrioAccessToken;
-    if (!token) return res.status(401).json({ success: false, error: 'Missing Thrio access token' });
+    if (!token) return res.status(401).json({ success: false, message: 'Missing Thrio access token' });
 
     const client = createThrioClient(token, req.user?.thrioClientLocation, req.user?.thrioBaseUrl);
     const path = `/${String(endpoint).replace(/^\/+/, '')}`;
@@ -186,13 +186,13 @@ router.all('/request', authenticate, async (req, res) => {
     } else if (lower === 'delete') {
       response = await client.delete(path);
     } else {
-      return res.status(400).json({ success: false, error: `Unsupported HTTP method: ${method}` });
+      return res.status(400).json({ success: false, message: `Unsupported HTTP method: ${method}` });
     }
 
     res.status(response.status || 200).json({ success: true, data: response.data });
   } catch (error) {
     logger.error('Thrio generic proxy failed:', error.message);
-    res.status(error.response?.status || 500).json({ success: false, error: 'Thrio API request failed', details: error.message });
+    res.status(error.response?.status || 500).json({ success: false, message: 'Thrio API request failed', details: error.message });
   }
 });
 

@@ -3,10 +3,22 @@
  */
 require('dotenv').config();
 
+const nodeEnv = process.env.NODE_ENV || 'development';
+
+// Guard: refuse to start in production without proper JWT secrets
+if (nodeEnv === 'production') {
+  if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'default-jwt-secret-for-development') {
+    throw new Error('JWT_SECRET must be set to a strong value in production');
+  }
+  if (!process.env.JWT_REFRESH_SECRET || process.env.JWT_REFRESH_SECRET === 'default-refresh-secret-for-development') {
+    throw new Error('JWT_REFRESH_SECRET must be set to a strong value in production');
+  }
+}
+
 const config = {
   // Server configuration
   port: process.env.PORT || 3000,
-  nodeEnv: process.env.NODE_ENV || 'development',
+  nodeEnv,
   
   // JWT configuration
   jwt: {

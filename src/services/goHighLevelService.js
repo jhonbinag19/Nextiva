@@ -553,7 +553,7 @@ const goHighLevelService = {
         params: { locationId }
       });
       
-      const existingTag = tagsResponse.data.tags.find(tag => tag.name === listName);
+      let existingTag = tagsResponse.data.tags.find(tag => tag.name === listName);
       
       if (!existingTag) {
         // Create the tag if it doesn't exist

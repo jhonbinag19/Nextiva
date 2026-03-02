@@ -11,7 +11,7 @@ const corsOptions = {
     : '*',
   
   // Allow these HTTP methods
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   
   // Allow these headers in requests
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-API-Key'],

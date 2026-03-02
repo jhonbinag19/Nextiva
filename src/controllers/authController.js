@@ -3,7 +3,6 @@ const axios = require('axios');
 const logger = require('../utils/logger');
 const config = require('../config/config');
 const { goHighLevelService, getThrioCredentials, setThrioCredentials } = require('../services/goHighLevelService');
-const { nextivaCrmService } = require('../services/nextivaCrmService');
 
 /**
  * Initiate GoHighLevel OAuth flow
@@ -72,15 +71,17 @@ const handleOAuthCallback = async (req, res, next) => {
     }
     
     // Exchange authorization code for access token
+    const formData = new URLSearchParams({
+      grant_type: 'authorization_code',
+      client_id: clientId,
+      client_secret: clientSecret,
+      code: code,
+      redirect_uri: redirectUri
+    });
+    
     const tokenResponse = await axios.post(
       tokenUrl,
-      {
-        grant_type: 'authorization_code',
-        client_id: clientId,
-        client_secret: clientSecret,
-        code: code,
-        redirect_uri: redirectUri
-      },
+      formData.toString(),
       {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
@@ -172,37 +173,37 @@ const verifyToken = (req, res) => {
 
 const getToken = async (req, res, next) => {
   try {
-    const { username, password, apiKey, locationId } = req.body || {};
+    const { apiKey, locationId } = req.body || {};
 
     const ghlApiKey = apiKey || req.headers['x-ghl-api-key'] || null;
     const ghlLocationId = locationId || req.headers['x-ghl-location-id'] || req.headers['x-location-id'] || null;
 
     if (!ghlApiKey || !ghlLocationId) {
-      return res.status(400).json({ success: false, message: 'GHL apiKey and locationId are required' });
+      return res.status(400).json({ success: false, message: 'apiKey and locationId are required' });
     }
 
     if (!process.env.JWT_SECRET) {
       return res.status(500).json({ success: false, message: 'JWT_SECRET is not configured' });
     }
 
+    // Validate GHL API key matches the claimed location
     const ghlValidation = await goHighLevelService.validateApiKey(ghlApiKey);
     if (ghlValidation?.success && ghlValidation.locationId && ghlValidation.locationId !== ghlLocationId) {
-      return res.status(401).json({ success: false, message: 'GHL apiKey does not match locationId' });
+      return res.status(401).json({ success: false, message: 'apiKey does not match locationId' });
     }
 
-    let credsUsername = username || null;
-    let credsPassword = password || null;
-
-    if (!credsUsername || !credsPassword) {
-      const stored = await getThrioCredentials(ghlLocationId, ghlApiKey);
-      if (!stored?.success) {
-        return res.status(401).json({ success: false, message: 'Stored Thrio credentials not found for location', details: stored?.message });
-      }
-      credsUsername = stored.credentials.username;
-      credsPassword = stored.credentials.password;
+    // Fetch stored Thrio credentials from GHL sub-location custom values
+    const stored = await getThrioCredentials(ghlLocationId, ghlApiKey);
+    if (!stored?.success) {
+      return res.status(401).json({
+        success: false,
+        message: 'Thrio credentials not found for this location. Use POST /api/auth/validate to store credentials first.',
+        details: stored?.message
+      });
     }
 
-    const thrioAuthResult = await authenticateWithThrio(credsUsername, credsPassword);
+    // Authenticate with Thrio using the stored credentials
+    const thrioAuthResult = await authenticateWithThrio(stored.credentials.username, stored.credentials.password);
     if (!thrioAuthResult?.success) {
       return res.status(401).json({
         success: false,
@@ -214,7 +215,7 @@ const getToken = async (req, res, next) => {
     const expiresInSeconds = Math.max(60, Math.min(Number(thrioAuthResult.expiresIn) || 3600, 86400));
 
     const tokenPayload = {
-      username: credsUsername,
+      username: stored.credentials.username,
       locationId: ghlLocationId,
       ghlLocationId: ghlLocationId,
       ghlAccessToken: ghlApiKey,
@@ -231,11 +232,9 @@ const getToken = async (req, res, next) => {
     if (process.env.JWT_REFRESH_SECRET) {
       refreshToken = jwt.sign(
         {
-          username: credsUsername,
           locationId: ghlLocationId,
           ghlLocationId: ghlLocationId,
-          ghlAccessToken: ghlApiKey,
-          thrioRefreshToken: thrioAuthResult.refreshToken || null
+          ghlAccessToken: ghlApiKey
         },
         process.env.JWT_REFRESH_SECRET,
         { expiresIn: '7d' }
@@ -249,7 +248,7 @@ const getToken = async (req, res, next) => {
       expiresIn: expiresInSeconds,
       tokenType: 'Bearer',
       user: {
-        username: credsUsername,
+        username: stored.credentials.username,
         locationId: ghlLocationId,
         authorities: thrioAuthResult.authorities || []
       }
@@ -266,41 +265,75 @@ const getToken = async (req, res, next) => {
  * @param {Object} res - Express response object
  * @param {Function} next - Express next middleware function
  */
-const refreshToken = async (req, res, next) => {
+const handleRefreshToken = async (req, res, next) => {
   try {
-    const { refreshToken } = req.body;
+    const { refreshToken: tokenFromBody } = req.body;
     
-    if (!refreshToken) {
+    if (!tokenFromBody) {
       return res.status(400).json({ success: false, message: 'Refresh token is required' });
     }
     
     // Verify refresh token
-    jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, async (err, decoded) => {
+    jwt.verify(tokenFromBody, process.env.JWT_REFRESH_SECRET, async (err, decoded) => {
       if (err) {
         return res.status(401).json({ success: false, message: 'Invalid refresh token' });
       }
       
-      const { username, userId } = decoded;
-      
-      // Generate new JWT token
+      const ghlLocationId = decoded.ghlLocationId || decoded.locationId;
+      const ghlAccessToken = decoded.ghlAccessToken;
+
+      if (!ghlLocationId || !ghlAccessToken) {
+        return res.status(401).json({ success: false, message: 'Refresh token is missing GHL context' });
+      }
+
+      // Fetch stored Thrio credentials from GHL sub-location
+      const stored = await getThrioCredentials(ghlLocationId, ghlAccessToken);
+      if (!stored?.success) {
+        return res.status(401).json({
+          success: false,
+          message: 'Stored Thrio credentials not found for this location. Re-validate via POST /api/auth/validate.',
+          details: stored?.message
+        });
+      }
+
+      // Re-authenticate with Thrio using stored credentials
+      const thrioAuthResult = await authenticateWithThrio(stored.credentials.username, stored.credentials.password);
+      if (!thrioAuthResult?.success) {
+        return res.status(401).json({
+          success: false,
+          message: 'Failed to re-authenticate with Thrio',
+          details: thrioAuthResult?.message || thrioAuthResult?.error
+        });
+      }
+
+      const expiresInSeconds = Math.max(60, Math.min(Number(thrioAuthResult.expiresIn) || 3600, 86400));
+
+      // Generate new JWT with fresh Thrio token
       const newToken = jwt.sign(
         { 
-          username,
-          userId
+          username: stored.credentials.username,
+          locationId: ghlLocationId,
+          ghlLocationId,
+          ghlAccessToken,
+          thrioAccessToken: thrioAuthResult.accessToken,
+          thrioBaseUrl: config.api.thrio.baseUrl,
+          thrioClientLocation: thrioAuthResult.clientLocation || null,
+          thrioLocation: thrioAuthResult.location || null,
+          authorities: thrioAuthResult.authorities || []
         },
         process.env.JWT_SECRET,
-        { expiresIn: '24h' }
+        { expiresIn: expiresInSeconds }
       );
       
       res.status(200).json({
         success: true,
         token: newToken,
-        expiresIn: 86400, // 24 hours in seconds
+        expiresIn: expiresInSeconds,
         tokenType: 'Bearer'
       });
     });
   } catch (error) {
-    logger.error('Error in refreshToken:', error);
+    logger.error('Error in handleRefreshToken:', error);
     next(error);
   }
 };
@@ -316,14 +349,12 @@ const validateExternalAuth = async (req, res) => {
   try {
     const { username, password, apiKey, locationId } = req.body;
 
-    if (logger && logger.info) {
-      logger.info('External authentication validation attempt', {
-        username: username ? username.substring(0, 3) + '***' : undefined,
-        hasPassword: !!password,
-        hasApiKey: !!apiKey,
-        hasLocationId: !!locationId
-      });
-    }
+    logger.info('External authentication validation attempt', {
+      username: username ? username.substring(0, 3) + '***' : undefined,
+      hasPassword: !!password,
+      hasApiKey: !!apiKey,
+      hasLocationId: !!locationId
+    });
 
     if (!username || !password) {
       return res.status(400).json({
@@ -343,16 +374,12 @@ const validateExternalAuth = async (req, res) => {
             username: storedCredentials.credentials.username,
             password: storedCredentials.credentials.password
           };
-          if (logger && logger.info) {
-            logger.info('Successfully fetched credentials from GoHighLevel for location:', locationId);
-          }
-        } else if (logger && logger.warn) {
+          logger.info('Successfully fetched credentials from GoHighLevel for location:', locationId);
+        } else {
           logger.warn('Failed to fetch credentials from GoHighLevel, using provided credentials');
         }
       } catch (fetchError) {
-        if (logger && logger.error) {
-          logger.error('Error fetching credentials from GoHighLevel:', fetchError.message);
-        }
+        logger.error('Error fetching credentials from GoHighLevel:', fetchError.message);
       }
     }
 
@@ -360,22 +387,13 @@ const validateExternalAuth = async (req, res) => {
 
     if (!thrioAuthResult || !thrioAuthResult.success) {
       const errorMessage = thrioAuthResult?.message || 'Authentication failed';
-      if (logger && logger.error) {
-        logger.error('Thrio authentication failed:', errorMessage);
-      }
+      logger.error('Thrio authentication failed:', errorMessage);
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials for Thrio API',
         error: 'INVALID_THRIO_CREDENTIALS',
         details: errorMessage
       });
-    }
-
-    process.env.THRIO_USERNAME = credentialsToUse.username;
-    process.env.THRIO_PASSWORD = credentialsToUse.password;
-    process.env.THRIO_ACCESS_TOKEN = thrioAuthResult.accessToken;
-    if (thrioAuthResult.refreshToken) {
-      process.env.THRIO_REFRESH_TOKEN = thrioAuthResult.refreshToken;
     }
 
     if (apiKey && locationId) {
@@ -388,9 +406,7 @@ const validateExternalAuth = async (req, res) => {
       }
     }
 
-    if (logger && logger.info) {
-      logger.info('Authentication successful for user:', credentialsToUse.username || 'unknown');
-    }
+    logger.info('Authentication successful for user:', credentialsToUse.username || 'unknown');
 
     res.status(200).json({
       success: true,
@@ -402,7 +418,6 @@ const validateExternalAuth = async (req, res) => {
           authenticated: true,
           timestamp: new Date().toISOString(),
           thrioAuthenticated: true,
-          thrioToken: thrioAuthResult.accessToken,
           tokenType: thrioAuthResult.tokenType,
           expiresIn: thrioAuthResult.expiresIn,
           authorities: thrioAuthResult.authorities,
@@ -413,11 +428,7 @@ const validateExternalAuth = async (req, res) => {
 
   } catch (error) {
     const safeMessage = error && typeof error === 'object' && error.message ? String(error.message) : 'Unknown error';
-    if (logger && logger.error) {
-      logger.error('Error in validateExternalAuth:', safeMessage);
-    } else {
-      console.error('Error in validateExternalAuth:', safeMessage);
-    }
+    logger.error('Error in validateExternalAuth:', safeMessage);
 
     res.status(500).json({
       success: false,
@@ -568,7 +579,7 @@ module.exports = {
   handleOAuthCallback,
   verifyToken,
   getToken,
-  refreshToken,
+  refreshToken: handleRefreshToken,
   validateExternalAuth,
   thrioAuthTest,
   authenticateWithThrio,

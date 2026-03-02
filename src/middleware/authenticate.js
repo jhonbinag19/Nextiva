@@ -19,20 +19,14 @@ const authenticate = async (req, res, next) => {
       (req.body ? (req.body.ghlApiKey || req.body.apiKey) : null) ||
       null;
 
-    let username = null;
-    let password = null;
-    const headerUsername = req.headers['x-thrio-username'] || req.headers['x-nextiva-username'] || null;
-    const headerPassword = req.headers['x-thrio-password'] || req.headers['x-nextiva-password'] || null;
-    const bodyUsername = req.body ? (req.body.username || req.body.thrioUsername) : null;
-    const bodyPassword = req.body ? (req.body.password || req.body.thrioPassword) : null;
-    let usingDirectThrioCredentials = false;
-
+    // ── Path 1 (primary): JWT Bearer token ──
+    // The JWT already contains thrioAccessToken and all GHL context.
     if (authHeader) {
-      const [scheme, tokenOrCreds] = authHeader.split(' ');
+      const [scheme, tokenValue] = authHeader.split(' ');
 
-      if (scheme === 'Bearer' && tokenOrCreds && process.env.JWT_SECRET) {
+      if (scheme === 'Bearer' && tokenValue && process.env.JWT_SECRET) {
         try {
-          const decoded = jwt.verify(tokenOrCreds, process.env.JWT_SECRET);
+          const decoded = jwt.verify(tokenValue, process.env.JWT_SECRET);
           req.user = {
             ...decoded,
             username: decoded.username,
@@ -45,93 +39,50 @@ const authenticate = async (req, res, next) => {
           };
           return next();
         } catch {
+          // JWT verification failed — fall through to Path 2
         }
       }
 
-      if (scheme === 'Basic' && tokenOrCreds) {
-      let decodedCreds;
-      try {
-        decodedCreds = Buffer.from(tokenOrCreds, 'base64').toString('utf8');
-      } catch {
-        return res.status(401).json({ success: false, message: 'Invalid Basic credentials encoding' });
+      // ── Path 2: Bearer token is a GHL API key + location header ──
+      // Fetch stored Thrio credentials from GHL sub-location and authenticate.
+      if (scheme === 'Bearer' && tokenValue && locationId) {
+        ghlApiKey = ghlApiKey || tokenValue;
       }
-      const sepIndex = decodedCreds.indexOf(':');
-      if (sepIndex === -1) {
-        return res.status(401).json({ success: false, message: 'Invalid Basic credentials format' });
-      }
-      username = decodedCreds.substring(0, sepIndex);
-      password = decodedCreds.substring(sepIndex + 1);
-      usingDirectThrioCredentials = true;
-      } else if (scheme === 'Bearer' && tokenOrCreds && headerUsername && headerPassword) {
-      username = headerUsername;
-      password = headerPassword;
-      usingDirectThrioCredentials = true;
-      } else if (scheme === 'Bearer' && tokenOrCreds && locationId && !ghlApiKey) {
-      // Bearer token IS the GHL API key — fetch stored Thrio credentials immediately
-      ghlApiKey = tokenOrCreds;
-      const stored = await getThrioCredentials(locationId, ghlApiKey);
-      if (!stored.success) {
-        return res.status(401).json({ success: false, message: 'Stored credentials not found for location', details: stored.message });
-      }
-      username = stored.credentials.username;
-      password = stored.credentials.password;
-      } else if (scheme === 'Bearer' && tokenOrCreds && ghlApiKey && locationId) {
-      const stored = await getThrioCredentials(locationId, ghlApiKey);
-      if (!stored.success) {
-        return res.status(401).json({ success: false, message: 'Stored credentials not found for location', details: stored.message });
-      }
-      username = stored.credentials.username;
-      password = stored.credentials.password;
-      } else {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid authorization format. Provide X-GHL-API-Key and X-GHL-Location-Id, or use Basic <base64(username:password)>, or use Bearer <token> plus X-GHL-Location-Id.'
-      });
     }
-    } else if (ghlApiKey && locationId) {
-      const stored = await getThrioCredentials(locationId, ghlApiKey);
-      if (!stored.success) {
-        return res.status(401).json({ success: false, message: 'Stored credentials not found for location', details: stored.message });
-      }
-      username = stored.credentials.username;
-      password = stored.credentials.password;
-    } else if (headerUsername && headerPassword) {
-      username = headerUsername;
-      password = headerPassword;
-      usingDirectThrioCredentials = true;
-    } else if (bodyUsername && bodyPassword) {
-      username = bodyUsername;
-      password = bodyPassword;
-      usingDirectThrioCredentials = true;
-    } else {
+
+    // ── Path 2 (fallback): GHL API key + location ID ──
+    // Fetch stored Thrio credentials and authenticate with Thrio per-request.
+    if (!ghlApiKey || !locationId) {
       return res.status(401).json({
         success: false,
-        message: 'Authorization is required. Provide Thrio credentials (Basic auth or username/password), or provide GoHighLevel context (Authorization Bearer or X-GHL-API-Key plus X-GHL-Location-Id).'
+        message: 'Authorization required. Use Bearer <JWT> from POST /api/auth/token, or provide X-GHL-API-Key and X-GHL-Location-Id headers.'
       });
     }
 
-    if (!username || !password) {
-      return res.status(401).json({ success: false, message: 'Username and password are required' });
-    }
-    if (!usingDirectThrioCredentials && (!locationId || !ghlApiKey)) {
-      return res.status(401).json({ success: false, message: 'X-GHL-API-Key and X-GHL-Location-Id are required when Thrio credentials are not provided' });
+    const stored = await getThrioCredentials(locationId, ghlApiKey);
+    if (!stored?.success) {
+      return res.status(401).json({
+        success: false,
+        message: 'Thrio credentials not found for this location. Use POST /api/auth/validate to store credentials first.',
+        details: stored?.message
+      });
     }
 
-    const authResult = await authenticateWithThrio(username, password);
-    if (!authResult.success) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials', details: authResult.message || authResult.error });
+    const authResult = await authenticateWithThrio(stored.credentials.username, stored.credentials.password);
+    if (!authResult?.success) {
+      return res.status(401).json({ success: false, message: 'Stored Thrio credentials are invalid', details: authResult?.message || authResult?.error });
     }
 
     req.user = {
-      username,
+      username: stored.credentials.username,
       thrioAccessToken: authResult.accessToken,
       thrioBaseUrl: config.api.thrio.baseUrl,
       thrioClientLocation: authResult.clientLocation || null,
       thrioLocation: authResult.location || null,
-      locationId: locationId || null,
-      apiKey: ghlApiKey || null,
-      ghlAccessToken: ghlApiKey || null,
-      ghlLocationId: locationId || null,
+      locationId,
+      apiKey: ghlApiKey,
+      ghlAccessToken: ghlApiKey,
+      ghlLocationId: locationId,
     };
 
     next();
