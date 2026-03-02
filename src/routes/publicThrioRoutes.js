@@ -80,4 +80,8 @@ router.post('/public/outboundlist/leadsupsert', async (req, res) => {
   return leadsUpsert(req, res, outboundListId);
 });
 
+router.post('/public/:outboundListId/leadsupsert', async (req, res) => {
+  return leadsUpsert(req, res, req.params.outboundListId);
+});
+
 module.exports = router;
