@@ -2,17 +2,16 @@
  * Configuration module for loading environment variables
  */
 require('dotenv').config();
+const crypto = require('crypto');
 
 const nodeEnv = process.env.NODE_ENV || 'development';
 
-// Warn in production if JWT secrets are missing or insecure
-if (nodeEnv === 'production') {
-  if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'default-jwt-secret-for-development') {
-    console.warn('⚠️  WARNING: JWT_SECRET is not set or using default. Set a strong value in Vercel environment variables.');
-  }
-  if (!process.env.JWT_REFRESH_SECRET || process.env.JWT_REFRESH_SECRET === 'default-refresh-secret-for-development') {
-    console.warn('⚠️  WARNING: JWT_REFRESH_SECRET is not set or using default. Set a strong value in Vercel environment variables.');
-  }
+// Auto-generate JWT secrets at runtime if not provided via env vars
+if (!process.env.JWT_SECRET) {
+  process.env.JWT_SECRET = crypto.randomBytes(32).toString('hex');
+}
+if (!process.env.JWT_REFRESH_SECRET) {
+  process.env.JWT_REFRESH_SECRET = crypto.randomBytes(32).toString('hex');
 }
 
 const config = {
@@ -22,8 +21,8 @@ const config = {
   
   // JWT configuration
   jwt: {
-    secret: process.env.JWT_SECRET || 'default-jwt-secret-for-development',
-    refreshSecret: process.env.JWT_REFRESH_SECRET || 'default-refresh-secret-for-development',
+    secret: process.env.JWT_SECRET,
+    refreshSecret: process.env.JWT_REFRESH_SECRET,
     expiresIn: '30d',
     refreshExpiresIn: '30d'
   },

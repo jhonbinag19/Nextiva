@@ -182,10 +182,6 @@ const getToken = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'apiKey and locationId are required' });
     }
 
-    if (!process.env.JWT_SECRET) {
-      return res.status(500).json({ success: false, message: 'JWT_SECRET is not configured' });
-    }
-
     // Validate GHL API key matches the claimed location
     const ghlValidation = await goHighLevelService.validateApiKey(ghlApiKey);
     if (ghlValidation?.success && ghlValidation.locationId && ghlValidation.locationId !== ghlLocationId) {
