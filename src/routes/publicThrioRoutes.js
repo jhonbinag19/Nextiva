@@ -74,6 +74,41 @@ router.post('/public/outboundlist/leadsupsert', authenticate, (req, res) => {
   return leadsUpsert(req, res, outboundListId);
 });
 
+// /api/public/commconsent — DNC comm consent
+router.post('/public/commconsent', authenticate, async (req, res) => {
+  let payload = req.body;
+  try {
+    const token = req.user?.thrioAccessToken;
+    if (!token) {
+      return res.status(200).json({ success: false, message: 'Missing Thrio access token' });
+    }
+
+    // Strip auth-only fields
+    if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+      const { locationId, ghlLocationId, ...rest } = payload;
+      payload = rest;
+    }
+
+    const client = createThrioClient(token, req.user?.thrioClientLocation, req.user?.thrioBaseUrl);
+    const response = await client.post('/data/api/types/commconsent', payload);
+
+    return res.status(200).json({ success: true, data: response.data });
+  } catch (error) {
+    logger.error('commconsent failed', {
+      message: error.message,
+      status: error.response?.status,
+      thrioError: error.response?.data
+    });
+    return res.status(200).json({
+      success: false,
+      message: error.response?.data?.message || error.message || 'Commconsent failed',
+      thrioStatus: error.response?.status || null,
+      thrioError: error.response?.data || null,
+      debug: { payloadSent: payload }
+    });
+  }
+});
+
 // Debug echo — returns exactly what was received (no auth). Remove after debugging.
 router.post('/public/debug-echo', (req, res) => {
   res.status(200).json({
