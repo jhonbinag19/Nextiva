@@ -12,9 +12,16 @@ const proxyUsersSms = async (req, res, extraPath = '') => {
     const path = `/users/api/sms${extraPath ? `/${extraPath}` : ''}`;
     const method = (req.method || 'GET').toLowerCase();
 
+    // Strip auth-only fields before forwarding to Thrio
+    let body = req.body;
+    if (body && typeof body === 'object' && !Array.isArray(body)) {
+      const { locationId, ghlLocationId, ...rest } = body;
+      body = rest;
+    }
+
     const axiosConfig = { method, url: path, params: req.query };
     if (!['get', 'head'].includes(method)) {
-      axiosConfig.data = req.body;
+      axiosConfig.data = body;
     }
 
     const response = await client(axiosConfig);
@@ -49,9 +56,16 @@ const proxyWorkflowsWebform = async (req, res, extraPath = '') => {
     const path = `/workflows/api/webform${extraPath ? `/${extraPath}` : ''}`;
     const method = (req.method || 'GET').toLowerCase();
 
+    // Strip auth-only fields before forwarding to Thrio
+    let body = req.body;
+    if (body && typeof body === 'object' && !Array.isArray(body)) {
+      const { locationId, ghlLocationId, ...rest } = body;
+      body = rest;
+    }
+
     const axiosConfig = { method, url: path, params: req.query };
     if (!['get', 'head'].includes(method)) {
-      axiosConfig.data = req.body;
+      axiosConfig.data = body;
     }
 
     const response = await client(axiosConfig);
