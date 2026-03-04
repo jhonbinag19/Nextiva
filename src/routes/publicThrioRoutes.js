@@ -82,10 +82,17 @@ router.put('/public/:outboundListId/resetlead/:leadId', authenticate, async (req
     if (!token) {
       return res.status(200).json({ success: false, message: 'Missing Thrio access token' });
     }
+    // Strip auth-only fields before forwarding to Thrio
+    let payload = req.body;
+    if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+      const { locationId, ghlLocationId, ...rest } = payload;
+      payload = Object.keys(rest).length ? rest : undefined;
+    }
+
     const client = createThrioClient(token, req.user?.thrioClientLocation, req.user?.thrioBaseUrl);
     const response = await client.put(
       `/data/api/types/outboundlist/${outboundListId}/resetlead/${leadId}`,
-      req.body && Object.keys(req.body).length ? req.body : undefined
+      payload
     );
     return res.status(200).json({ success: true, data: response.data });
   } catch (error) {
