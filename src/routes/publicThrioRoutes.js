@@ -89,11 +89,20 @@ router.post('/public/:outboundListId/resetlead/:leadId', authenticate, async (re
       payload = Object.keys(rest).length ? rest : undefined;
     }
 
+    logger.info('resetlead request', {
+      outboundListId,
+      leadId,
+      thrioUrl: `${req.user?.thrioBaseUrl || 'N/A'}/data/api/types/outboundlist/${outboundListId}/resetlead/${leadId}`,
+      payload
+    });
+
     const client = createThrioClient(token, req.user?.thrioClientLocation, req.user?.thrioBaseUrl);
     const response = await client.post(
       `/data/api/types/outboundlist/${outboundListId}/resetlead/${leadId}`,
       payload
     );
+
+    logger.info('resetlead response', { outboundListId, leadId, status: response.status, data: response.data });
     return res.status(200).json({ success: true, data: response.data });
   } catch (error) {
     logger.error('resetlead failed', {
