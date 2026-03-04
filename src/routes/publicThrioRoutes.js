@@ -26,12 +26,24 @@ const leadsUpsert = async (req, res, outboundListId) => {
       payload = [rest];
     }
 
+    const firstLead = Array.isArray(payload) ? payload[0] : payload;
+    logger.info('leadsupsert request', {
+      outboundListId,
+      thrioUrl: `${req.user?.thrioBaseUrl || 'N/A'}/data/api/types/outboundlist/${outboundListId}/leadsupsert`,
+      leadCount: Array.isArray(payload) ? payload.length : 1,
+      payloadFields: firstLead ? Object.keys(firstLead) : [],
+      payloadData: firstLead
+        ? Object.entries(firstLead).map(([key, value]) => ({ field: key, value }))
+        : []
+    });
+
     const client = createThrioClient(token, req.user?.thrioClientLocation, req.user?.thrioBaseUrl);
     const response = await client.post(
       `/data/api/types/outboundlist/${outboundListId}/leadsupsert`,
       payload
     );
 
+    logger.info('leadsupsert response', { outboundListId, status: response.status, data: response.data });
     return res.status(200).json({ success: true, data: response.data });
   } catch (error) {
     const safePayload = payload || req.body || null;
