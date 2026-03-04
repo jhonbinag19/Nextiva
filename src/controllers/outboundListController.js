@@ -69,7 +69,7 @@ const resetLead = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Missing Thrio access token' });
     }
     const client = createThrioClient(token, req.user?.thrioClientLocation, req.user?.thrioBaseUrl);
-    const response = await client.put(
+    const response = await client.post(
       `/data/api/types/outboundlist/${outboundListId}/resetlead/${leadId}`,
       req.body && Object.keys(req.body).length ? req.body : undefined
     );
