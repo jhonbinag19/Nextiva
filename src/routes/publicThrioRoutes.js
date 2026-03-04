@@ -93,7 +93,10 @@ router.post('/public/:outboundListId/resetlead/:leadId', authenticate, async (re
       outboundListId,
       leadId,
       thrioUrl: `${req.user?.thrioBaseUrl || 'N/A'}/data/api/types/outboundlist/${outboundListId}/resetlead/${leadId}`,
-      payload
+      payloadFields: payload ? Object.keys(payload) : [],
+      payloadData: payload
+        ? Object.entries(payload).map(([key, value]) => ({ field: key, value }))
+        : []
     });
 
     const client = createThrioClient(token, req.user?.thrioClientLocation, req.user?.thrioBaseUrl);
