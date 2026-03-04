@@ -61,8 +61,43 @@ const createLeadFixed = (outboundListId) => {
   };
 };
 
+const resetLead = async (req, res) => {
+  const { outboundListId, leadId } = req.params;
+  try {
+    const token = req.user?.thrioAccessToken;
+    if (!token) {
+      return res.status(401).json({ success: false, message: 'Missing Thrio access token' });
+    }
+    const client = createThrioClient(token, req.user?.thrioClientLocation, req.user?.thrioBaseUrl);
+    const response = await client.put(
+      `/data/api/types/outboundlist/${outboundListId}/resetlead/${leadId}`,
+      req.body && Object.keys(req.body).length ? req.body : undefined
+    );
+    res.status(response.status || 200).json({ success: true, data: response.data });
+  } catch (error) {
+    logger.error('Reset lead failed', {
+      message: error.message,
+      status: error.response?.status,
+      thrioError: error.response?.data,
+      outboundListId,
+      leadId
+    });
+    res.status(error.response?.status || 500).json({
+      success: false,
+      message: error.response?.data?.message || error.message || 'Failed to reset lead',
+      thrioError: error.response?.data,
+      debug: {
+        outboundListId,
+        leadId,
+        thrioUrl: `${req.user?.thrioBaseUrl || 'https://nextiva.thrio.io'}/data/api/types/outboundlist/${outboundListId}/resetlead/${leadId}`
+      }
+    });
+  }
+};
+
 module.exports = {
   createLeadDynamic,
   createLeadFixed,
-  createCampaignOutboundList
+  createCampaignOutboundList,
+  resetLead
 };

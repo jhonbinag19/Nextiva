@@ -74,6 +74,44 @@ router.post('/public/outboundlist/leadsupsert', authenticate, (req, res) => {
   return leadsUpsert(req, res, outboundListId);
 });
 
+// /api/public/:outboundListId/resetlead/:leadId
+router.put('/public/:outboundListId/resetlead/:leadId', authenticate, async (req, res) => {
+  const { outboundListId, leadId } = req.params;
+  try {
+    const token = req.user?.thrioAccessToken;
+    if (!token) {
+      return res.status(200).json({ success: false, message: 'Missing Thrio access token' });
+    }
+    const client = createThrioClient(token, req.user?.thrioClientLocation, req.user?.thrioBaseUrl);
+    const response = await client.put(
+      `/data/api/types/outboundlist/${outboundListId}/resetlead/${leadId}`,
+      req.body && Object.keys(req.body).length ? req.body : undefined
+    );
+    return res.status(200).json({ success: true, data: response.data });
+  } catch (error) {
+    logger.error('resetlead failed', {
+      message: error.message,
+      status: error.response?.status,
+      thrioError: error.response?.data,
+      outboundListId,
+      leadId
+    });
+    return res.status(200).json({
+      success: false,
+      message: error.response?.data?.message || error.message || 'Failed to reset lead',
+      thrioStatus: error.response?.status || null,
+      thrioError: error.response?.data || null,
+      debug: {
+        outboundListId,
+        leadId,
+        thrioUrl: `${req.user?.thrioBaseUrl || 'N/A'}/data/api/types/outboundlist/${outboundListId}/resetlead/${leadId}`,
+        hasToken: !!req.user?.thrioAccessToken,
+        locationId: req.user?.locationId || null
+      }
+    });
+  }
+});
+
 // /api/public/commconsent — DNC comm consent
 router.post('/public/commconsent', authenticate, async (req, res) => {
   let payload = req.body;
