@@ -5,7 +5,7 @@ const { createLeadDynamic, createCampaignOutboundList, resetLead } = require('..
 
 router.post('/data/api/types/outboundlist/:outboundListId/lead', authenticate, createLeadDynamic);
 router.post('/data/api/types/outboundlist/:outboundListId/leadsupsert', authenticate, createLeadDynamic);
-router.put('/data/api/types/outboundlist/:outboundListId/resetlead/:leadId', authenticate, resetLead);
+router.post('/data/api/types/outboundlist/:outboundListId/resetlead/:leadId', authenticate, resetLead);
 
 router.post('/api/outboundlist/:outboundListId/lead', authenticate, createLeadDynamic);
 router.post('/api/outboundlist/:outboundListId/leadsupsert', authenticate, createLeadDynamic);

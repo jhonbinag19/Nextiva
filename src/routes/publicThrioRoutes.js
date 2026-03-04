@@ -75,7 +75,7 @@ router.post('/public/outboundlist/leadsupsert', authenticate, (req, res) => {
 });
 
 // /api/public/:outboundListId/resetlead/:leadId
-router.put('/public/:outboundListId/resetlead/:leadId', authenticate, async (req, res) => {
+router.post('/public/:outboundListId/resetlead/:leadId', authenticate, async (req, res) => {
   const { outboundListId, leadId } = req.params;
   try {
     const token = req.user?.thrioAccessToken;
