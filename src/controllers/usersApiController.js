@@ -15,7 +15,7 @@ const proxyUsersSms = async (req, res, extraPath = '') => {
     // Strip auth-only fields before forwarding to Thrio
     let body = req.body;
     if (body && typeof body === 'object' && !Array.isArray(body)) {
-      const { locationId, ghlLocationId, ...rest } = body;
+      const { locationId, ghlLocationId, username, password, ...rest } = body;
       body = rest;
     }
 
@@ -59,7 +59,7 @@ const proxyWorkflowsWebform = async (req, res, extraPath = '') => {
     // Strip auth-only fields before forwarding to Thrio
     let body = req.body;
     if (body && typeof body === 'object' && !Array.isArray(body)) {
-      const { locationId, ghlLocationId, ...rest } = body;
+      const { locationId, ghlLocationId, username, password, ...rest } = body;
       body = rest;
     }
 

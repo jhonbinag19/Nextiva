@@ -20,9 +20,9 @@ const leadsUpsert = async (req, res, outboundListId) => {
 
     // Strip auth-only fields and ensure payload is an array (Thrio requires it)
     if (Array.isArray(payload)) {
-      payload = payload.map(({ locationId, ghlLocationId, ...lead }) => lead);
+      payload = payload.map(({ locationId, ghlLocationId, username, password, ...lead }) => lead);
     } else if (payload && typeof payload === 'object') {
-      const { locationId, ghlLocationId, ...rest } = payload;
+      const { locationId, ghlLocationId, username, password, ...rest } = payload;
       payload = [rest];
     }
 
@@ -97,7 +97,7 @@ router.post('/public/:outboundListId/resetlead/:leadId', authenticate, async (re
     // Strip auth-only fields before forwarding to Thrio
     let payload = req.body;
     if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
-      const { locationId, ghlLocationId, ...rest } = payload;
+      const { locationId, ghlLocationId, username, password, ...rest } = payload;
       payload = Object.keys(rest).length ? rest : undefined;
     }
 
