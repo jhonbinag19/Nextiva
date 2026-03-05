@@ -68,7 +68,17 @@ const proxyWorkflowsWebform = async (req, res, extraPath = '') => {
       axiosConfig.data = body;
     }
 
+    logger.info('webform request', {
+      method: method.toUpperCase(),
+      thrioUrl: `${req.user?.thrioBaseUrl || 'N/A'}${path}`,
+      payloadFields: body && typeof body === 'object' ? Object.keys(body) : [],
+      payloadData: body && typeof body === 'object'
+        ? Object.entries(body).map(([key, value]) => ({ field: key, value }))
+        : []
+    });
+
     const response = await client(axiosConfig);
+    logger.info('webform response', { status: response.status, data: response.data });
     res.status(response.status || 200).json({ success: true, data: response.data });
   } catch (error) {
     logger.error('Workflows webform proxy request failed', { message: error.message, status: error.response?.status });
