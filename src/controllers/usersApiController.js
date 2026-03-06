@@ -80,10 +80,7 @@ const proxyWorkflowsWebform = async (req, res, extraPath = '') => {
     logger.info('webform request', {
       method: method.toUpperCase(),
       thrioUrl: `${req.user?.thrioBaseUrl || 'N/A'}${path}`,
-      payloadFields: body && typeof body === 'object' ? Object.keys(body) : [],
-      payloadData: body && typeof body === 'object'
-        ? Object.entries(body).map(([key, value]) => ({ field: key, value }))
-        : []
+      payload: body
     });
 
     const response = await client(axiosConfig);
