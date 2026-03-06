@@ -56,11 +56,20 @@ const proxyWorkflowsWebform = async (req, res, extraPath = '') => {
     const path = `/workflows/api/webform${extraPath ? `/${extraPath}` : ''}`;
     const method = (req.method || 'GET').toLowerCase();
 
-    // Strip auth-only fields before forwarding to Thrio
+    // Strip auth-only fields and restructure for Thrio webform
     let body = req.body;
     if (body && typeof body === 'object' && !Array.isArray(body)) {
-      const { locationId, ghlLocationId, username, password, ...rest } = body;
-      body = rest;
+      const {
+        locationId, ghlLocationId, username, password,
+        toAddress, bodyTemplateId,
+        ...rest
+      } = body;
+
+      body = {
+        ...rest,
+        ...(toAddress !== undefined && { properties: { toAddress } }),
+        ...(bodyTemplateId !== undefined && { consumerData: { bodyTemplateId } })
+      };
     }
 
     const axiosConfig = { method, url: path, params: req.query };
