@@ -65,14 +65,21 @@ const proxyWorkflowsWebform = async (req, res, extraPath = '') => {
         ...rest
       } = body;
 
-      const formattedToAddress = toAddress
-        ? `+1${toAddress.replace(/\D/g, '')}`
+      // toAddress may come in flat OR already nested inside properties
+      const rawToAddress = toAddress || rest.properties?.toAddress;
+      const formattedToAddress = rawToAddress
+        ? `+1${rawToAddress.replace(/\D/g, '')}`
         : undefined;
 
+      const { properties: existingProperties, ...restWithoutProperties } = rest;
+
       body = {
-        ...rest,
-        ...(formattedToAddress !== undefined && { properties: { toAddress: formattedToAddress } }),
-        ...(bodyTemplateId !== undefined && { consumerData: { bodyTemplateId } })
+        ...restWithoutProperties,
+        ...(formattedToAddress !== undefined
+          ? { properties: { ...existingProperties, toAddress: formattedToAddress } }
+          : existingProperties ? { properties: existingProperties } : {}),
+        ...(bodyTemplateId !== undefined && { consumerData: { bodyTemplateId } }),
+        ...(rest.consumerData && bodyTemplateId === undefined && { consumerData: rest.consumerData })
       };
     }
 
