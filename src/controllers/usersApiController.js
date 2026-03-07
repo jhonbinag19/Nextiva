@@ -1,6 +1,25 @@
 const logger = require('../utils/logger');
 const { createThrioClient } = require('../services/thrioService');
 
+/**
+ * Format a phone number to E.164.
+ * - Already E.164 (+XXXXX)      → kept as-is
+ * - 11 digits starting with 1   → +1XXXXXXXXXX  (North America)
+ * - 10 digits                   → +1XXXXXXXXXX  (US/Canada default)
+ * - 11+ digits, other prefix    → +<digits>     (international, trust the prefix)
+ */
+const formatPhone = (raw) => {
+  if (!raw) return undefined;
+  // Already in E.164
+  if (raw.startsWith('+')) return raw.replace(/[^\d+]/g, '');
+  const digits = raw.replace(/\D/g, '');
+  if (!digits) return undefined;
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
+  // International number without +: trust the prefix as-is
+  return `+${digits}`;
+};
+
 const proxyUsersSms = async (req, res, extraPath = '') => {
   try {
     const token = req.user?.thrioAccessToken;
@@ -68,7 +87,7 @@ const proxyWorkflowsWebform = async (req, res, extraPath = '') => {
       // toAddress may come in flat OR already nested inside properties
       const rawToAddress = toAddress || rest.properties?.toAddress;
       const formattedToAddress = rawToAddress
-        ? `+1${rawToAddress.replace(/\D/g, '')}`
+        ? formatPhone(rawToAddress)
         : undefined;
 
       const { properties: existingProperties, ...restWithoutProperties } = rest;
