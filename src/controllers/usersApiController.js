@@ -77,6 +77,7 @@ const proxyWorkflowsWebform = async (req, res, extraPath = '') => {
 
     // Strip auth-only fields and restructure for Thrio webform
     let body = req.body;
+    logger.info('webform raw body', { body: req.body });
     if (body && typeof body === 'object' && !Array.isArray(body)) {
       const {
         locationId, ghlLocationId, username, password,
@@ -97,8 +98,11 @@ const proxyWorkflowsWebform = async (req, res, extraPath = '') => {
         ...(formattedToAddress !== undefined
           ? { properties: { ...existingProperties, toAddress: formattedToAddress } }
           : existingProperties ? { properties: existingProperties } : {}),
-        ...(bodyTemplateId !== undefined && { consumerData: { bodyTemplateId } }),
-        ...(rest.consumerData && bodyTemplateId === undefined && { consumerData: rest.consumerData })
+        ...(bodyTemplateId
+          ? { consumerData: { bodyTemplateId } }
+          : rest.consumerData
+            ? { consumerData: rest.consumerData }
+            : {})
       };
     }
 
